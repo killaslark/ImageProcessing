@@ -168,6 +168,70 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private void histogramStretchImage() {
+        int width = bitmap.getWidth();
+        int height = bitmap.getHeight();
+        Bitmap newBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+        int minRed, minGreen, minBlue, maxRed, maxGreen, maxBlue;
+        minRed = minGreen = minBlue = maxRed = maxGreen = maxBlue = -1;
+        int iter = 0;
+        // Find minimal value in RGB histograms
+        while (minRed == -1 || minGreen == -1 || minBlue == -1 && iter < 256) {
+            if (minRed == -1) {
+                if (redValue[iter] > 0) minRed = iter;
+            }
+            if (minGreen == -1) {
+                if (greenValue[iter] > 0) minGreen = iter;
+            }
+            if (minBlue == -1) {
+                if (blueValue[iter] > 0) minBlue = iter;
+            }
+            iter++;
+        }
+        // Find maximal value in RGB histograms
+        iter = 255;
+        while (maxRed == -1 || maxGreen == -1 || maxBlue == -1 && iter >= 0) {
+            if (maxRed == -1) {
+                if (redValue[iter] > 0) maxRed = iter;
+            }
+            if (maxGreen == -1) {
+                if (greenValue[iter] > 0) maxGreen = iter;
+            }
+            if (maxBlue == -1) {
+                if (blueValue[iter] > 0) maxBlue = iter;
+            }
+            iter--;
+        }
+        int redStretchFactor = 255 / (maxRed - minRed);
+        int greenStretchFactor = 255 / (maxGreen - minGreen);
+        int blueStretchFactor = 255 / (maxBlue - minBlue);
+
+        for(int i = 0; i < width; i++) {
+            for(int j = 0; j < width; j++) {
+                pixel = bitmap.getPixel(i, j);
+                int red, green, blue, alpha, pix;
+                pix = 0;
+                
+                alpha = (int) Color.alpha(pixel);
+                red = (int) (Color.red(pixel) * redStretchFactor);
+                green = (int) (Color.green(pixel) * greenStretchFactor);
+                blue = (int) (Color.blue(pixel) * blueStretchFactor);
+                if(red > 255) red = 255;
+                if(green > 255) green = 255;
+                if(blue > 255) blue = 255;
+                if(red < 0) red = 0;
+                if(green < 0) green = 0;
+                if(blue < 0) blue = 0;
+                pix = pix | blue;
+                pix = pix | (green << 8);
+                pix = pix | (red << 16);
+                pix = pix | (alpha << 24);
+                newBitmap.setPixel(i, j, pix);
+            }
+        }
+        imageView.setImageBitmap(newBitmap);
+    }
+
     private void equalizateImage() {
         //todo : Equalizer
         int width = bitmap.getWidth();
@@ -211,7 +275,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void SelectFeature() {
-        final CharSequence[] items ={"Histogram","Equalizer","Cancel"};
+        final CharSequence[] items ={"Histogram","Equalizer","Histogram Stretching","Cancel"};
         AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
         builder.setTitle("Feature");
         builder.setItems(items, new DialogInterface.OnClickListener() {
@@ -221,6 +285,10 @@ public class MainActivity extends AppCompatActivity {
                     setColor();
                 } else if (items[which].equals("Equalizer")) {
                     equalizateImage();
+                    dialog.dismiss();
+                } else if (items[which].equals("Histogram Stretching")) {
+                    setColor();
+                    histogramStretchImage();
                     dialog.dismiss();
                 } else if (items[which].equals("Cancel")) {
                     dialog.dismiss();
