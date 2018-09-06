@@ -48,6 +48,11 @@ public class MainActivity extends AppCompatActivity {
     private int[] blueValue = new int[256];
     private int[] greenValue = new int[256];
     private int[] grayValue = new int[256];
+    private int[] yValue = new int[256];
+    private int[] uValue = new int[256];
+    private int[] vValue = new int[256];
+    private int[] cGrayValue = new int[256];
+    private int[] TValue = new int[256];
 
 
     @Override
@@ -69,6 +74,10 @@ public class MainActivity extends AppCompatActivity {
             blueValue[i] = 0;
             greenValue[i] = 0;
             grayValue[i] = 0;
+            cGrayValue[i] = 0;
+            yValue[i] = 0;
+            uValue[i] = 0;
+            vValue[i] = 0;
         }
 
         menu.setOnClickListener(new View.OnClickListener() {
@@ -133,6 +142,12 @@ public class MainActivity extends AppCompatActivity {
             int width = bitmap.getWidth();
             int height = bitmap.getHeight();
             Integer grayColor;
+            for (int i = 0; i < 256; i++) {
+                redValue[i] = 0;
+                blueValue[i] = 0;
+                greenValue[i] = 0;
+                grayValue[i] = 0;
+            }
             for(int i = 0; i < width; i++) {
                 for(int j = 0; j < height; j++) {
                     pixel = bitmap.getPixel(i,j);
@@ -159,13 +174,31 @@ public class MainActivity extends AppCompatActivity {
         //todo : Equalizer
         int width = bitmap.getWidth();
         int height = bitmap.getHeight();
+        Bitmap newBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+        cGrayValue[0] = grayValue[0];
+        for (int i = 1; i < 256; i++) {
+            cGrayValue[i] = cGrayValue[i-1] + grayValue[i];
+            TValue[i] = cGrayValue[i]*255/(width*height);
+        }
         for(int i = 0; i < width; i++) {
-            for(int j = 0; j < height; j++) {
+            for (int j = 0; j < height; j++) {
+                pixel = bitmap.getPixel(i, j);
+                int red, green, blue, alpha, pix;
+                pix = 0;
+                alpha = (int) TValue[Color.alpha(pixel)];
+                red = (int) TValue[Color.red(pixel)];
+                blue = (int) TValue[Color.blue(pixel)];
+                green = (int) TValue[Color.green(pixel)];
+                pix = pix | blue;
+                pix = pix | (green << 8);
+                pix = pix | (red << 16);
+                pix = pix | (alpha << 24);
+                newBitmap.setPixel(i, j, pix);
             }
         }
-
+        imageView.setImageBitmap(newBitmap);
         // update the histogram
-        setColor();
+        //setColor();
     }
 
     private void SelectFeature() {
@@ -177,7 +210,7 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(DialogInterface dialog, int which) {
                 if(items[which].equals("Histogram")) {
                     setColor();
-                } else if (items[which].equals("Equalizier")) {
+                } else if (items[which].equals("Equalizer")) {
                     equalizateImage();
                     dialog.dismiss();
                 } else if (items[which].equals("Cancel")) {
