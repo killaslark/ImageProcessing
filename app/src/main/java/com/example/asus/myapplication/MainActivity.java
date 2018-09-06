@@ -49,9 +49,7 @@ public class MainActivity extends AppCompatActivity {
     private int[] greenValue = new int[256];
     private int[] grayValue = new int[256];
     private int[] yValue = new int[256];
-    private int[] uValue = new int[256];
-    private int[] vValue = new int[256];
-    private int[] cGrayValue = new int[256];
+    private int[] cYValue = new int[256];
     private int[] TValue = new int[256];
 
 
@@ -74,10 +72,8 @@ public class MainActivity extends AppCompatActivity {
             blueValue[i] = 0;
             greenValue[i] = 0;
             grayValue[i] = 0;
-            cGrayValue[i] = 0;
             yValue[i] = 0;
-            uValue[i] = 0;
-            vValue[i] = 0;
+            cYValue[i] = 0;
         }
 
         menu.setOnClickListener(new View.OnClickListener() {
@@ -147,6 +143,7 @@ public class MainActivity extends AppCompatActivity {
                 blueValue[i] = 0;
                 greenValue[i] = 0;
                 grayValue[i] = 0;
+                yValue[i] = 0;
             }
             for(int i = 0; i < width; i++) {
                 for(int j = 0; j < height; j++) {
@@ -156,6 +153,7 @@ public class MainActivity extends AppCompatActivity {
                     greenValue[Color.green(pixel)]++;
                     grayColor = Color.red(pixel) + Color.green(pixel) + Color.blue(pixel);
                     grayColor /= 3;
+                    yValue[(int) (( 0.299 * Color.red(pixel) + 0.587 * Color.green(pixel) + 0.114 * Color.blue(pixel)) * 219 / 255) + 16]++;
                     grayValue[grayColor]++;
                 }
             }
@@ -175,20 +173,31 @@ public class MainActivity extends AppCompatActivity {
         int width = bitmap.getWidth();
         int height = bitmap.getHeight();
         Bitmap newBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
-        cGrayValue[0] = grayValue[0];
+        cYValue[0] = yValue[0];
         for (int i = 1; i < 256; i++) {
-            cGrayValue[i] = cGrayValue[i-1] + grayValue[i];
-            TValue[i] = cGrayValue[i]*255/(width*height);
+            cYValue[i] = cYValue[i-1] + yValue[i];
+            TValue[i] = cYValue[i]*255/(width*height);
         }
         for(int i = 0; i < width; i++) {
             for (int j = 0; j < height; j++) {
                 pixel = bitmap.getPixel(i, j);
                 int red, green, blue, alpha, pix;
+                int y,u,v;
                 pix = 0;
-                alpha = (int) TValue[Color.alpha(pixel)];
-                red = (int) TValue[Color.red(pixel)];
-                blue = (int) TValue[Color.blue(pixel)];
-                green = (int) TValue[Color.green(pixel)];
+                y = TValue[(int) (( 0.299 * Color.red(pixel) + 0.587 * Color.green(pixel) + 0.114 * Color.blue(pixel)) * 219 / 255) + 16];
+                u = (int) ((-0.299 * Color.red(pixel) - 0.587 * Color.green(pixel) + 0.886 * Color.blue(pixel)) * 224 / 1.772 / 255) + 128;
+                v = (int) (( 0.701 * Color.red(pixel) - 0.587 * Color.green(pixel) - 0.114 * Color.blue(pixel)) * 224 / 1.402 / 255) + 128;
+
+                alpha = (int) Color.alpha(pixel);
+                red =  (int)((y - 16) + (1.370705 * (v - 128)));
+                blue = (int)((y - 16) + (1.732446 * (u - 128)));
+                green = (int)((y - 16) - (0.698001 * (v - 128)) - (0.337633 * (u - 128)));
+                if(red > 255) red = 255;
+                if(green > 255) green = 255;
+                if(blue > 255) blue = 255;
+                if(red < 0) red = 0;
+                if(green < 0) green = 0;
+                if(blue < 0) blue = 0;
                 pix = pix | blue;
                 pix = pix | (green << 8);
                 pix = pix | (red << 16);
