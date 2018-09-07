@@ -39,10 +39,12 @@ public class MainActivity extends AppCompatActivity {
 
 
     private ImageView imageView;
+    private ImageView imageView1;
     private Integer REQUEST_CAMERA = 1, SELECT_FILE = 0;
 //    private Integer CREATE_HISTOGRAM = 2;
     private BarChart barChartRed,barChartGreen,barChartBlue,barChartGray;
     private Bitmap bitmap;
+    private Bitmap histBitmap;
     private int pixel;
     private int[] redValue = new int[256];
     private int[] blueValue = new int[256];
@@ -63,6 +65,7 @@ public class MainActivity extends AppCompatActivity {
         barChartBlue = (BarChart) findViewById(R.id.barChartBlue);
         barChartGray = (BarChart) findViewById(R.id.barChartGray);
         imageView = (ImageView) findViewById(R.id.imageView);
+        imageView1 = (ImageView) findViewById(R.id.imageView1);
 
         Button menu = (Button) findViewById(R.id.menu);
         Button feature = (Button) findViewById(R.id.feature);
@@ -135,8 +138,8 @@ public class MainActivity extends AppCompatActivity {
 
     private void setColor() {
         try {
-            int width = bitmap.getWidth();
-            int height = bitmap.getHeight();
+            int width = histBitmap.getWidth();
+            int height = histBitmap.getHeight();
             Integer grayColor;
             for (int i = 0; i < 256; i++) {
                 redValue[i] = 0;
@@ -147,7 +150,7 @@ public class MainActivity extends AppCompatActivity {
             }
             for(int i = 0; i < width; i++) {
                 for(int j = 0; j < height; j++) {
-                    pixel = bitmap.getPixel(i,j);
+                    pixel = histBitmap.getPixel(i,j);
                     redValue[Color.red(pixel)]++ ;
                     blueValue[Color.blue(pixel)]++;
                     greenValue[Color.green(pixel)]++;
@@ -229,8 +232,8 @@ public class MainActivity extends AppCompatActivity {
                 newBitmap.setPixel(i, j, pix);
             }
         }
-        imageView.setImageBitmap(newBitmap);
-        bitmap = newBitmap;
+        imageView1.setImageBitmap(newBitmap);
+        histBitmap = newBitmap;
     }
 
     private void equalizateImage() {
@@ -270,8 +273,8 @@ public class MainActivity extends AppCompatActivity {
                 newBitmap.setPixel(i, j, pix);
             }
         }
-        imageView.setImageBitmap(newBitmap);
-        bitmap = newBitmap;
+        imageView1.setImageBitmap(newBitmap);
+        histBitmap = newBitmap;
         // update the histogram
         //setColor();
     }
@@ -286,9 +289,13 @@ public class MainActivity extends AppCompatActivity {
                 if(items[which].equals("Histogram")) {
                     setColor();
                 } else if (items[which].equals("Equalizer")) {
+                    histBitmap = bitmap;
+                    setColor();
                     equalizateImage();
                     dialog.dismiss();
                 } else if (items[which].equals("Histogram Stretching")) {
+                    histBitmap = bitmap;
+                    setColor();
                     histogramStretchImage();
                     dialog.dismiss();
                 } else if (items[which].equals("Cancel")) {
@@ -332,6 +339,7 @@ public class MainActivity extends AppCompatActivity {
             if (requestCode == REQUEST_CAMERA) {
                 Bundle bundle = data.getExtras();
                 bitmap = (Bitmap) bundle.get("data");
+                histBitmap = bitmap;
                 imageView.setImageBitmap(bitmap);
 
             } else if (requestCode == SELECT_FILE) {
@@ -340,6 +348,7 @@ public class MainActivity extends AppCompatActivity {
                     try {
                         inputStream = getContentResolver().openInputStream(selectedImageUri);
                         bitmap = BitmapFactory.decodeStream(inputStream);
+                        histBitmap = bitmap;
                         imageView.setImageBitmap(bitmap);
 
                     } catch (FileNotFoundException e) {
