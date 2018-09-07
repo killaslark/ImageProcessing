@@ -176,7 +176,7 @@ public class MainActivity extends AppCompatActivity {
         minRed = minGreen = minBlue = maxRed = maxGreen = maxBlue = -1;
         int iter = 0;
         // Find minimal value in RGB histograms
-        while (minRed == -1 || minGreen == -1 || minBlue == -1 && iter < 256) {
+        while ((minRed == -1 || minGreen == -1 || minBlue == -1) && iter < 256) {
             if (minRed == -1) {
                 if (redValue[iter] > 0) minRed = iter;
             }
@@ -190,7 +190,7 @@ public class MainActivity extends AppCompatActivity {
         }
         // Find maximal value in RGB histograms
         iter = 255;
-        while (maxRed == -1 || maxGreen == -1 || maxBlue == -1 && iter >= 0) {
+        while ((maxRed == -1 || maxGreen == -1 || maxBlue == -1) && iter >= 0) {
             if (maxRed == -1) {
                 if (redValue[iter] > 0) maxRed = iter;
             }
@@ -207,15 +207,15 @@ public class MainActivity extends AppCompatActivity {
         int blueStretchFactor = 255 / (maxBlue - minBlue);
 
         for(int i = 0; i < width; i++) {
-            for(int j = 0; j < width; j++) {
+            for(int j = 0; j < height; j++) {
                 pixel = bitmap.getPixel(i, j);
                 int red, green, blue, alpha, pix;
                 pix = 0;
                 
                 alpha = (int) Color.alpha(pixel);
-                red = (int) (Color.red(pixel) * redStretchFactor);
-                green = (int) (Color.green(pixel) * greenStretchFactor);
-                blue = (int) (Color.blue(pixel) * blueStretchFactor);
+                red = (int) ((Color.red(pixel)-minRed) * redStretchFactor);
+                green = (int) ((Color.green(pixel)-minGreen) * greenStretchFactor);
+                blue = (int) ((Color.blue(pixel)-minBlue) * blueStretchFactor);
                 if(red > 255) red = 255;
                 if(green > 255) green = 255;
                 if(blue > 255) blue = 255;
@@ -230,6 +230,7 @@ public class MainActivity extends AppCompatActivity {
             }
         }
         imageView.setImageBitmap(newBitmap);
+        bitmap = newBitmap;
     }
 
     private void equalizateImage() {
@@ -270,6 +271,7 @@ public class MainActivity extends AppCompatActivity {
             }
         }
         imageView.setImageBitmap(newBitmap);
+        bitmap = newBitmap;
         // update the histogram
         //setColor();
     }
@@ -287,7 +289,6 @@ public class MainActivity extends AppCompatActivity {
                     equalizateImage();
                     dialog.dismiss();
                 } else if (items[which].equals("Histogram Stretching")) {
-                    setColor();
                     histogramStretchImage();
                     dialog.dismiss();
                 } else if (items[which].equals("Cancel")) {
