@@ -10,6 +10,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:fillViewport="true">
+
         <TableLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
@@ -37,6 +38,11 @@
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
+
+            <com.example.asus.myapplication.ColorCorrectionView
+                android:id="@+id/colorCorrection"
+                android:layout_width="172dp"
+                android:layout_height="172dp" />
 
             <Button
                 android:id="@+id/menu"

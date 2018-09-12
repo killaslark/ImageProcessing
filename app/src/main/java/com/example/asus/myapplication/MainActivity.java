@@ -6,21 +6,16 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
-import android.graphics.drawable.BitmapDrawable;
-import android.media.Image;
 import android.net.Uri;
 import android.os.Environment;
 import android.provider.MediaStore;
-import android.support.v4.content.ContextCompat;
-import android.support.v7.app.ActionBar;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.view.MotionEvent;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.github.mikephil.charting.charts.BarChart;
@@ -37,7 +32,7 @@ import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
-
+    private ColorCorrectionView correctionView;
     private ImageView imageView;
     private ImageView imageView1;
     private Integer REQUEST_CAMERA = 1, SELECT_FILE = 0;
@@ -53,6 +48,7 @@ public class MainActivity extends AppCompatActivity {
     private int[] yValue = new int[256];
     private int[] cYValue = new int[256];
     private int[] TValue = new int[256];
+    private ColorCorrectionView.Point[] point = new ColorCorrectionView.Point[256];
 
 
     @Override
@@ -66,6 +62,7 @@ public class MainActivity extends AppCompatActivity {
         barChartGray = (BarChart) findViewById(R.id.barChartGray);
         imageView = (ImageView) findViewById(R.id.imageView);
         imageView1 = (ImageView) findViewById(R.id.imageView1);
+        correctionView = (ColorCorrectionView) findViewById(R.id.colorCorrection);
 
         Button menu = (Button) findViewById(R.id.menu);
         Button feature = (Button) findViewById(R.id.feature);
@@ -279,8 +276,48 @@ public class MainActivity extends AppCompatActivity {
         //setColor();
     }
 
+    private void correctImage(){
+        int width = bitmap.getWidth();
+        int height = bitmap.getHeight();
+        Bitmap newBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+        point = correctionView.getPoints();
+        for (int i = 0; i < 256; i++) {
+            TValue[i] = (int) (255f-((point[i].y-50)/2));
+            Log.d("Correction", Integer.toString(i) + ": " + Integer.toString(TValue[i]));
+        }
+        for(int i = 0; i < width; i++) {
+            for (int j = 0; j < height; j++) {
+                pixel = bitmap.getPixel(i, j);
+                int red, green, blue, alpha, pix;
+                int y,u,v;
+                pix = 0;
+                y = TValue[(int) (( 0.299 * Color.red(pixel) + 0.587 * Color.green(pixel) + 0.114 * Color.blue(pixel)) * 219 / 255) + 16];
+                u = (int) ((-0.299 * Color.red(pixel) - 0.587 * Color.green(pixel) + 0.886 * Color.blue(pixel)) * 224 / 1.772 / 255) + 128;
+                v = (int) (( 0.701 * Color.red(pixel) - 0.587 * Color.green(pixel) - 0.114 * Color.blue(pixel)) * 224 / 1.402 / 255) + 128;
+
+                alpha = (int) Color.alpha(pixel);
+                red =  (int)((y - 16) + (1.370705 * (v - 128)));
+                blue = (int)((y - 16) + (1.732446 * (u - 128)));
+                green = (int)((y - 16) - (0.698001 * (v - 128)) - (0.337633 * (u - 128)));
+                if(red > 255) red = 255;
+                if(green > 255) green = 255;
+                if(blue > 255) blue = 255;
+                if(red < 0) red = 0;
+                if(green < 0) green = 0;
+                if(blue < 0) blue = 0;
+                pix = pix | blue;
+                pix = pix | (green << 8);
+                pix = pix | (red << 16);
+                pix = pix | (alpha << 24);
+                newBitmap.setPixel(i, j, pix);
+            }
+        }
+        imageView1.setImageBitmap(newBitmap);
+        histBitmap = newBitmap;
+    }
+
     private void SelectFeature() {
-        final CharSequence[] items ={"Histogram","Equalizer","Histogram Stretching","Cancel"};
+        final CharSequence[] items ={"Histogram","Equalizer","Histogram Stretching","Update","Cancel"};
         AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
         builder.setTitle("Feature");
         builder.setItems(items, new DialogInterface.OnClickListener() {
@@ -298,6 +335,8 @@ public class MainActivity extends AppCompatActivity {
                     setColor();
                     histogramStretchImage();
                     dialog.dismiss();
+                } else if (items[which].equals("Update")){
+                    correctImage();
                 } else if (items[which].equals("Cancel")) {
                     dialog.dismiss();
                 }
