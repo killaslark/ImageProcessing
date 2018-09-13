@@ -16,6 +16,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.github.mikephil.charting.charts.BarChart;
@@ -32,7 +33,14 @@ import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
-    private ColorCorrectionView correctionView;
+    private CurveView valueCurveView;
+    private CurveView redCurveView;
+    private CurveView greenCurveView;
+    private CurveView blueCurveView;
+    private TextView valueCurveText;
+    private TextView redCurveText;
+    private TextView greenCurveText;
+    private TextView blueCurveText;
     private ImageView imageView;
     private ImageView imageView1;
     private Integer REQUEST_CAMERA = 1, SELECT_FILE = 0;
@@ -40,6 +48,7 @@ public class MainActivity extends AppCompatActivity {
     private BarChart barChartRed,barChartGreen,barChartBlue,barChartGray;
     private Bitmap bitmap;
     private Bitmap histBitmap;
+    private boolean curves = false;
     private int pixel;
     private int[] redValue = new int[256];
     private int[] blueValue = new int[256];
@@ -48,7 +57,7 @@ public class MainActivity extends AppCompatActivity {
     private int[] yValue = new int[256];
     private int[] cYValue = new int[256];
     private int[] TValue = new int[256];
-    private ColorCorrectionView.Point[] point = new ColorCorrectionView.Point[256];
+    private Point[] point = new Point[256];
 
 
     @Override
@@ -62,7 +71,14 @@ public class MainActivity extends AppCompatActivity {
         barChartGray = (BarChart) findViewById(R.id.barChartGray);
         imageView = (ImageView) findViewById(R.id.imageView);
         imageView1 = (ImageView) findViewById(R.id.imageView1);
-        correctionView = (ColorCorrectionView) findViewById(R.id.colorCorrection);
+        valueCurveView = (CurveView) findViewById(R.id.valueCurveCorrection);
+        redCurveView = (CurveView) findViewById(R.id.redCurveCorrection);
+        greenCurveView = (CurveView) findViewById(R.id.greenCurveCorrection);
+        blueCurveView = (CurveView) findViewById(R.id.blueCurveCorrection);
+        valueCurveText = (TextView) findViewById(R.id.valueCurveText);
+        redCurveText = (TextView) findViewById(R.id.redCurveText);
+        greenCurveText = (TextView) findViewById(R.id.greenCurveText);
+        blueCurveText = (TextView) findViewById(R.id.blueCurveText);
 
         Button menu = (Button) findViewById(R.id.menu);
         Button feature = (Button) findViewById(R.id.feature);
@@ -90,7 +106,10 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-
+        valueCurveView.setGraphColor(Color.DKGRAY);
+        redCurveView.setGraphColor(Color.RED);
+        greenCurveView.setGraphColor(Color.GREEN);
+        blueCurveView.setGraphColor(Color.BLUE);
     }
 
     @Override
@@ -134,6 +153,10 @@ public class MainActivity extends AppCompatActivity {
 
 
     private void setColor() {
+        barChartRed.setVisibility(View.VISIBLE);
+        barChartGreen.setVisibility(View.VISIBLE);
+        barChartBlue.setVisibility(View.VISIBLE);
+        barChartGray.setVisibility(View.VISIBLE);
         try {
             int width = histBitmap.getWidth();
             int height = histBitmap.getHeight();
@@ -212,10 +235,10 @@ public class MainActivity extends AppCompatActivity {
                 int red, green, blue, alpha, pix;
                 pix = 0;
                 
-                alpha = (int) Color.alpha(pixel);
-                red = (int) ((Color.red(pixel)-minRed) * redStretchFactor);
-                green = (int) ((Color.green(pixel)-minGreen) * greenStretchFactor);
-                blue = (int) ((Color.blue(pixel)-minBlue) * blueStretchFactor);
+                alpha = Color.alpha(pixel);
+                red = ((Color.red(pixel)-minRed) * redStretchFactor);
+                green = ((Color.green(pixel)-minGreen) * greenStretchFactor);
+                blue = ((Color.blue(pixel)-minBlue) * blueStretchFactor);
                 if(red > 255) red = 255;
                 if(green > 255) green = 255;
                 if(blue > 255) blue = 255;
@@ -276,11 +299,44 @@ public class MainActivity extends AppCompatActivity {
         //setColor();
     }
 
+    private void applyImageCurve() {
+        int width = bitmap.getWidth();
+        int height = bitmap.getHeight();
+        Bitmap newBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+        point = valueCurveView.getPoints();
+
+        for(int i = 0; i < width; i++) {
+            for(int j = 0; j < height; j++) {
+                pixel = bitmap.getPixel(i, j);
+                int red, green, blue, alpha, pix;
+                pix = 0;
+
+                alpha = Color.alpha(pixel);
+                red = 255 - (int) (point[Color.red(pixel)].y-50)/2;
+                green = 255 - (int) (point[Color.green(pixel)].y-50)/2;
+                blue = 255 - (int) (point[Color.blue(pixel)].y-50)/2;
+                if(red > 255) red = 255;
+                if(green > 255) green = 255;
+                if(blue > 255) blue = 255;
+                if(red < 0) red = 0;
+                if(green < 0) green = 0;
+                if(blue < 0) blue = 0;
+                pix = pix | blue;
+                pix = pix | (green << 8);
+                pix = pix | (red << 16);
+                pix = pix | (alpha << 24);
+                newBitmap.setPixel(i, j, pix);
+            }
+        }
+        imageView1.setImageBitmap(newBitmap);
+        histBitmap = newBitmap;
+    }
+
     private void correctImage(){
         int width = bitmap.getWidth();
         int height = bitmap.getHeight();
         Bitmap newBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
-        point = correctionView.getPoints();
+        point = valueCurveView.getPoints();
         for (int i = 0; i < 256; i++) {
             TValue[i] = (int) (255f-((point[i].y-50)/2));
             Log.d("Correction", Integer.toString(i) + ": " + Integer.toString(TValue[i]));
@@ -316,8 +372,32 @@ public class MainActivity extends AppCompatActivity {
         histBitmap = newBitmap;
     }
 
+    private void showHideCurves() {
+        if(!curves) {
+            valueCurveView.setVisibility(View.VISIBLE);
+            redCurveView.setVisibility(View.VISIBLE);
+            greenCurveView.setVisibility(View.VISIBLE);
+            blueCurveView.setVisibility(View.VISIBLE);
+            valueCurveText.setVisibility(View.VISIBLE);
+            redCurveText.setVisibility(View.VISIBLE);
+            greenCurveText.setVisibility(View.VISIBLE);
+            blueCurveText.setVisibility(View.VISIBLE);
+            curves = true;
+        } else {
+            valueCurveView.setVisibility(View.GONE);
+            redCurveView.setVisibility(View.GONE);
+            greenCurveView.setVisibility(View.GONE);
+            blueCurveView.setVisibility(View.GONE);
+            valueCurveText.setVisibility(View.GONE);
+            redCurveText.setVisibility(View.GONE);
+            greenCurveText.setVisibility(View.GONE);
+            blueCurveText.setVisibility(View.GONE);
+            curves = false;
+        }
+    }
+
     private void SelectFeature() {
-        final CharSequence[] items ={"Histogram","Equalizer","Histogram Stretching","Update","Cancel"};
+        final CharSequence[] items ={"Histogram","Equalizer","Histogram Stretching","Show/Hide Curves","Apply Curves","Cancel"};
         AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
         builder.setTitle("Feature");
         builder.setItems(items, new DialogInterface.OnClickListener() {
@@ -335,8 +415,11 @@ public class MainActivity extends AppCompatActivity {
                     setColor();
                     histogramStretchImage();
                     dialog.dismiss();
-                } else if (items[which].equals("Update")){
-                    correctImage();
+                } else if (items[which].equals("Show/Hide Curves")){
+                    showHideCurves();
+                } else if (items[which].equals("Apply Curves")){
+                    //correctImage();
+                    applyImageCurve();
                 } else if (items[which].equals("Cancel")) {
                     dialog.dismiss();
                 }
@@ -355,6 +438,8 @@ public class MainActivity extends AppCompatActivity {
                 if(items[which].equals("Camera")) {
                     Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
                     startActivityForResult(intent, REQUEST_CAMERA);
+                    imageView.setVisibility(View.VISIBLE);
+                    imageView1.setVisibility(View.VISIBLE);
                 } else if (items[which].equals("Gallery")) {
                     Intent photopickerIntent = new Intent(Intent.ACTION_PICK);
                     File pictureDirectory = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
@@ -362,6 +447,8 @@ public class MainActivity extends AppCompatActivity {
                     Uri data = Uri.parse(pictureDirectoryPath);
                     photopickerIntent.setDataAndType(data, "image/*");
                     startActivityForResult(photopickerIntent,SELECT_FILE);
+                    imageView.setVisibility(View.VISIBLE);
+                    imageView1.setVisibility(View.VISIBLE);
                 } else if (items[which].equals("Cancel")) {
                     dialog.dismiss();
                 }
