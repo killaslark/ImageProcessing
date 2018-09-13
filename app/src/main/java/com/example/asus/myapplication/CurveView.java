@@ -15,35 +15,10 @@ import android.view.View;
  * Created by Winarto on 9/11/2018.
  */
 
-public class ColorCorrectionView extends View{
-    class Point {
-        float x, y;
-
-        public Point(){
-            this.x = 0;
-            this.y = 0;
-        }
-        public Point(float x, float y) {
-            this.x = x;
-            this.y = y;
-        }
-
-        public void setPoint(float x, float y){
-            this.x = x;
-            this.y = y;
-        }
-
-        public float getX() {
-            return x;
-        }
-
-        public float getY() {
-            return y;
-        }
-    }
-
+public class ValueCurveView extends View{
     Paint paint;
     Path path;
+    Path controlPath;
     boolean touching = false;
     //Touch point
     float x, y;
@@ -53,17 +28,17 @@ public class ColorCorrectionView extends View{
     Point offset;
     int selectedIndex = -1;
 
-    public ColorCorrectionView(Context context) {
+    public ValueCurveView(Context context) {
         super(context);
         init();
     }
 
-    public ColorCorrectionView(Context context, AttributeSet attrs) {
+    public ValueCurveView(Context context, AttributeSet attrs) {
         super(context, attrs);
         init();
     }
 
-    public ColorCorrectionView(Context context, AttributeSet attrs, int defStyle) {
+    public ValueCurveView(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
         init();
     }
@@ -76,10 +51,10 @@ public class ColorCorrectionView extends View{
         offset = new Point();
         bezier = new Point[4];
         bezier[0] = new Point(50,560);
-        bezier[1] = new Point(178, 432);
-        bezier[2] = new Point(306,304);
+        bezier[1] = new Point(220, 390);
+        bezier[2] = new Point(390,220);
         bezier[3] = new Point(560, 50);
-    }
+     }
 
     @Override
     protected void onDraw(Canvas canvas) {
@@ -108,31 +83,47 @@ public class ColorCorrectionView extends View{
             selectedIndex = -1;
         }
 
-        path = new Path();
-        paint.setColor(Color.RED);
-        paint.setStrokeWidth(3);
-        path.moveTo(bezier[0].x, bezier[0].y);
-        path.cubicTo(bezier[1].x, bezier[1].y, bezier[2].x, bezier[2].y , bezier[3].x, bezier[3].y);
-        canvas.drawPath(path, paint);
-
-        /*path.reset();
-        paint.setColor(Color.GRAY);
+        controlPath = new Path();
         paint.setStrokeWidth(1);
-        path.moveTo(50, 50);
-        path.lineTo(300, 50);
-        path.lineTo(100, 400);
-        path.lineTo(400, 400);*/
-
-        PathMeasure pm = new PathMeasure(path, false);
-        float aCoordinates[] = {0f, 0f};
-
-        pm.getPosTan(pm.getLength() * 0.1f, aCoordinates, null);
-        for(int i = 0;i < aCoordinates.length;i++)
-        {
-            Log.d("Coordinate ", "X:" + Float.toString(aCoordinates[0]) + ", Y: " + Float.toString(aCoordinates[1]));
+        paint.setColor(Color.BLUE);
+        controlPath.moveTo(bezier[0].x, bezier[0].y);
+        controlPath.lineTo(bezier[1].x, bezier[1].y);
+        controlPath.lineTo(bezier[2].x, bezier[2].y);
+        controlPath.lineTo(bezier[3].x, bezier[3].y);
+        canvas.drawPath(controlPath, paint);
+        for(int i = 0; i < bezier.length; i++) {
+            //paint.setColor(Color.RED);
+            //float[] c = new float[2];
+            //c = getPathCoordinate(path, 0.33f * i);
+            //canvas.drawCircle(c[0], c[1], 5f, paint);
+            paint.setStrokeWidth(2);
+            canvas.drawCircle(bezier[i].x, bezier[i].y, 5f, paint);
         }
+
+        path = new Path();
+        paint.setStrokeWidth(3);
+        paint.setColor(Color.RED);
+        path.moveTo(bezier[0].x, bezier[0].y);
+        for(int i = 1; i < 4; i++) {
+            path.quadTo(bezier[i-1].x, bezier[i-1].y, (bezier[i-1].x+bezier[i].x)/2, (bezier[i-1].y+bezier[i].y)/2);
+        }
+        path.lineTo(bezier[3].x, bezier[3].y);
+        //path.cubicTo(bezier[1].x, bezier[1].y, bezier[2].x, bezier[2].y , bezier[3].x, bezier[3].y);
         canvas.drawPath(path, paint);
 
+    }
+
+    private float[] getPathCoordinate(Path p, float x) {
+        PathMeasure pm = new PathMeasure(p, false);
+        float length = pm.getLength();
+        float multiplier = x;
+        if (x < 0.0) {multiplier = 0.0f;}
+        else if (x > 1.0) {multiplier = 1.0f;}
+        float distance = multiplier * length;
+        float[] coordinate = new float[2];
+        pm.getPosTan(distance, coordinate, null);
+
+        return (coordinate);
     }
 
     public Point[] getPoints() {
