@@ -9,7 +9,9 @@
     <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:fillViewport="true">
+        android:fillViewport="true"
+        tools:layout_editor_absoluteX="57dp"
+        tools:layout_editor_absoluteY="0dp">
 
         <TableLayout
             android:layout_width="match_parent"
@@ -24,6 +26,7 @@
                 android:layout_marginEnd="8dp"
                 android:layout_marginStart="8dp"
                 android:layout_marginTop="36dp"
+                android:visibility="gone"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
@@ -35,21 +38,77 @@
                 android:layout_marginEnd="8dp"
                 android:layout_marginStart="8dp"
                 android:layout_marginTop="36dp"
+                android:visibility="gone"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
 
-            <com.example.asus.myapplication.ColorCorrectionView
-                android:id="@+id/colorCorrection"
-                android:layout_width="172dp"
-                android:layout_height="172dp" />
+            <TextView
+                android:id="@+id/valueCurveText"
+                android:text="Value Curve"
+                android:layout_width="match_parent"
+                android:textAlignment="center"
+                android:visibility="gone" />
+
+            <com.example.asus.myapplication.CurveView
+                android:id="@+id/valueCurveCorrection"
+                android:layout_width="250dp"
+                android:layout_height="250dp"
+                android:layout_marginStart="75dp"
+                android:layout_marginEnd="75dp"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/redCurveText"
+                android:text="Red Curve"
+                android:layout_width="match_parent"
+                android:textAlignment="center"
+                android:visibility="gone" />
+
+            <com.example.asus.myapplication.CurveView
+                android:id="@+id/redCurveCorrection"
+                android:layout_width="250dp"
+                android:layout_height="250dp"
+                android:layout_marginStart="75dp"
+                android:layout_marginEnd="75dp"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/greenCurveText"
+                android:text="Green Curve"
+                android:layout_width="match_parent"
+                android:textAlignment="center"
+                android:visibility="gone" />
+
+            <com.example.asus.myapplication.CurveView
+                android:id="@+id/greenCurveCorrection"
+                android:layout_width="250dp"
+                android:layout_height="250dp"
+                android:layout_marginStart="75dp"
+                android:layout_marginEnd="75dp"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/blueCurveText"
+                android:text="Blue Curve"
+                android:layout_width="match_parent"
+                android:textAlignment="center"
+                android:visibility="gone" />
+
+            <com.example.asus.myapplication.CurveView
+                android:id="@+id/blueCurveCorrection"
+                android:layout_width="250dp"
+                android:layout_height="250dp"
+                android:layout_marginStart="75dp"
+                android:layout_marginEnd="75dp"
+                android:visibility="gone" />
 
             <Button
                 android:id="@+id/menu"
                 android:layout_marginEnd="8dp"
                 android:layout_marginStart="8dp"
                 android:layout_marginTop="16dp"
-                android:text="Menu"
+                android:text="Select Image"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/imageView1" />
@@ -71,9 +130,10 @@
                 android:layout_marginEnd="8dp"
                 android:layout_marginStart="8dp"
                 android:layout_marginTop="36dp"
+                android:visibility="gone"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/feature"></com.github.mikephil.charting.charts.BarChart>
+                app:layout_constraintTop_toBottomOf="@+id/feature" />
 
             <com.github.mikephil.charting.charts.BarChart
                 android:id="@+id/barChartGreen"
@@ -82,9 +142,10 @@
                 android:layout_marginEnd="8dp"
                 android:layout_marginStart="8dp"
                 android:layout_marginTop="36dp"
+                android:visibility="gone"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/feature"></com.github.mikephil.charting.charts.BarChart>
+                app:layout_constraintTop_toBottomOf="@+id/feature" />
 
             <com.github.mikephil.charting.charts.BarChart
                 android:id="@+id/barChartBlue"
@@ -93,9 +154,10 @@
                 android:layout_marginEnd="8dp"
                 android:layout_marginStart="8dp"
                 android:layout_marginTop="36dp"
+                android:visibility="gone"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/feature"></com.github.mikephil.charting.charts.BarChart>
+                app:layout_constraintTop_toBottomOf="@+id/feature" />
 
             <com.github.mikephil.charting.charts.BarChart
                 android:id="@+id/barChartGray"
@@ -104,9 +166,10 @@
                 android:layout_marginEnd="8dp"
                 android:layout_marginStart="8dp"
                 android:layout_marginTop="36dp"
+                android:visibility="gone"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/feature"></com.github.mikephil.charting.charts.BarChart>
+                app:layout_constraintTop_toBottomOf="@+id/feature" />
 
         </TableLayout>
     </ScrollView>
