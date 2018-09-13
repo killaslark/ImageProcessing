@@ -57,7 +57,11 @@ public class MainActivity extends AppCompatActivity {
     private int[] yValue = new int[256];
     private int[] cYValue = new int[256];
     private int[] TValue = new int[256];
-    private Point[] point = new Point[256];
+    private Point[] pointValueCurve = new Point[256];
+    private Point[] pointRedCurve = new Point[256];
+    private Point[] pointGreenCurve = new Point[256];
+    private Point[] pointBlueCurve = new Point[256];
+
 
 
     @Override
@@ -303,42 +307,55 @@ public class MainActivity extends AppCompatActivity {
         int width = bitmap.getWidth();
         int height = bitmap.getHeight();
         Bitmap newBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
-        point = valueCurveView.getPoints();
+        try {
+            pointValueCurve = valueCurveView.getPoints();
+            pointRedCurve = redCurveView.getPoints();
+            pointGreenCurve = greenCurveView.getPoints();
+            pointBlueCurve = blueCurveView.getPoints();
 
-        for(int i = 0; i < width; i++) {
-            for(int j = 0; j < height; j++) {
-                pixel = bitmap.getPixel(i, j);
-                int red, green, blue, alpha, pix;
-                pix = 0;
 
-                alpha = Color.alpha(pixel);
-                red = 255 - (int) (point[Color.red(pixel)].y-50)/2;
-                green = 255 - (int) (point[Color.green(pixel)].y-50)/2;
-                blue = 255 - (int) (point[Color.blue(pixel)].y-50)/2;
-                if(red > 255) red = 255;
-                if(green > 255) green = 255;
-                if(blue > 255) blue = 255;
-                if(red < 0) red = 0;
-                if(green < 0) green = 0;
-                if(blue < 0) blue = 0;
-                pix = pix | blue;
-                pix = pix | (green << 8);
-                pix = pix | (red << 16);
-                pix = pix | (alpha << 24);
-                newBitmap.setPixel(i, j, pix);
+            for (int i = 0; i < width; i++) {
+                for (int j = 0; j < height; j++) {
+                    pixel = bitmap.getPixel(i, j);
+                    int red, green, blue, alpha, pix;
+                    pix = 0;
+
+                    alpha = Color.alpha(pixel);
+//                    red = 255 - (int) (pointValueCurve[Color.red(pixel)].y + pointRedCurve[Color.red(pixel)].y - 100) / 4;
+//                    green = 255 - (int) (pointValueCurve[Color.green(pixel)].y + pointGreenCurve[Color.green(pixel)].y - 100) / 4;
+//                    blue = 255 - (int) (pointValueCurve[Color.blue(pixel)].y + pointBlueCurve[Color.blue(pixel)].y - 100) / 4;
+                    red = 255 - (int) (pointValueCurve[Color.red(pixel)].x + pointRedCurve[Color.red(pixel)].y - pointRedCurve[Color.red(pixel)].x -50) / 2;
+                    green = 255 - (int) (pointValueCurve[Color.green(pixel)].x + pointGreenCurve[Color.green(pixel)].y - pointGreenCurve[Color.green(pixel)].x -50) / 2;
+                    blue = 255 - (int) (pointValueCurve[Color.blue(pixel)].x + pointBlueCurve[Color.blue(pixel)].y - pointBlueCurve[Color.blue(pixel)].x -50 ) / 2;
+                    if (red > 255) red = 255;
+                    if (green > 255) green = 255;
+                    if (blue > 255) blue = 255;
+                    if (red < 0) red = 0;
+                    if (green < 0) green = 0;
+                    if (blue < 0) blue = 0;
+                    pix = pix | blue;
+                    pix = pix | (green << 8);
+                    pix = pix | (red << 16);
+                    pix = pix | (alpha << 24);
+                    newBitmap.setPixel(i, j, pix);
+                }
             }
+            imageView1.setImageBitmap(newBitmap);
+            histBitmap = newBitmap;
         }
-        imageView1.setImageBitmap(newBitmap);
-        histBitmap = newBitmap;
+        catch (Error e) {
+            e.printStackTrace();
+            Toast.makeText(this, "Unable to apply image Curve", Toast.LENGTH_LONG).show();
+        }
     }
 
     private void correctImage(){
         int width = bitmap.getWidth();
         int height = bitmap.getHeight();
         Bitmap newBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
-        point = valueCurveView.getPoints();
+        pointValueCurve = valueCurveView.getPoints();
         for (int i = 0; i < 256; i++) {
-            TValue[i] = (int) (255f-((point[i].y-50)/2));
+            TValue[i] = (int) (255f-((pointValueCurve[i].y-50)/2));
             Log.d("Correction", Integer.toString(i) + ": " + Integer.toString(TValue[i]));
         }
         for(int i = 0; i < width; i++) {
