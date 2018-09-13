@@ -15,7 +15,7 @@ import android.view.View;
  * Created by Winarto on 9/11/2018.
  */
 
-public class ValueCurveView extends View{
+public class CurveView extends View{
     Paint paint;
     Path path;
     Path controlPath;
@@ -27,18 +27,19 @@ public class ValueCurveView extends View{
     Point firstTouch;
     Point offset;
     int selectedIndex = -1;
+    int color;
 
-    public ValueCurveView(Context context) {
+    public CurveView(Context context) {
         super(context);
         init();
     }
 
-    public ValueCurveView(Context context, AttributeSet attrs) {
+    public CurveView(Context context, AttributeSet attrs) {
         super(context, attrs);
         init();
     }
 
-    public ValueCurveView(Context context, AttributeSet attrs, int defStyle) {
+    public CurveView(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
         init();
     }
@@ -54,6 +55,10 @@ public class ValueCurveView extends View{
         bezier[1] = new Point(220, 390);
         bezier[2] = new Point(390,220);
         bezier[3] = new Point(560, 50);
+     }
+
+     public void setGraphColor(int c) {
+        color = c;
      }
 
     @Override
@@ -85,7 +90,7 @@ public class ValueCurveView extends View{
 
         controlPath = new Path();
         paint.setStrokeWidth(1);
-        paint.setColor(Color.BLUE);
+        paint.setColor(Color.BLACK);
         controlPath.moveTo(bezier[0].x, bezier[0].y);
         controlPath.lineTo(bezier[1].x, bezier[1].y);
         controlPath.lineTo(bezier[2].x, bezier[2].y);
@@ -102,7 +107,7 @@ public class ValueCurveView extends View{
 
         path = new Path();
         paint.setStrokeWidth(3);
-        paint.setColor(Color.RED);
+        paint.setColor(color);
         path.moveTo(bezier[0].x, bezier[0].y);
         for(int i = 1; i < 4; i++) {
             path.quadTo(bezier[i-1].x, bezier[i-1].y, (bezier[i-1].x+bezier[i].x)/2, (bezier[i-1].y+bezier[i].y)/2);
