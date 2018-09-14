@@ -303,6 +303,13 @@ public class MainActivity extends AppCompatActivity {
         //setColor();
     }
 
+    private int getColorOffset(int color, Point value, Point rgb)
+    {
+        int valueOffset = (int)(255f - ((value.getY()-50)/2)) - color;
+        int rgbOffset = (int)(255f - ((rgb.getY()-50)/2)) - color;
+        return (valueOffset+rgbOffset);
+    }
+
     private void applyImageCurve() {
         int width = bitmap.getWidth();
         int height = bitmap.getHeight();
@@ -312,7 +319,6 @@ public class MainActivity extends AppCompatActivity {
             pointRedCurve = redCurveView.getPoints();
             pointGreenCurve = greenCurveView.getPoints();
             pointBlueCurve = blueCurveView.getPoints();
-
 
             for (int i = 0; i < width; i++) {
                 for (int j = 0; j < height; j++) {
@@ -324,9 +330,9 @@ public class MainActivity extends AppCompatActivity {
 //                    red = 255 - (int) (pointValueCurve[Color.red(pixel)].y + pointRedCurve[Color.red(pixel)].y - 100) / 4;
 //                    green = 255 - (int) (pointValueCurve[Color.green(pixel)].y + pointGreenCurve[Color.green(pixel)].y - 100) / 4;
 //                    blue = 255 - (int) (pointValueCurve[Color.blue(pixel)].y + pointBlueCurve[Color.blue(pixel)].y - 100) / 4;
-                    red = 255 - (int) (pointValueCurve[Color.red(pixel)].x + pointRedCurve[Color.red(pixel)].y - pointRedCurve[Color.red(pixel)].x -50) / 2;
-                    green = 255 - (int) (pointValueCurve[Color.green(pixel)].x + pointGreenCurve[Color.green(pixel)].y - pointGreenCurve[Color.green(pixel)].x -50) / 2;
-                    blue = 255 - (int) (pointValueCurve[Color.blue(pixel)].x + pointBlueCurve[Color.blue(pixel)].y - pointBlueCurve[Color.blue(pixel)].x -50 ) / 2;
+                    red = Color.red(pixel) + getColorOffset(Color.red(pixel), pointValueCurve[Color.red(pixel)], pointRedCurve[Color.red(pixel)]);
+                    green = Color.green(pixel) + getColorOffset(Color.green(pixel), pointValueCurve[Color.green(pixel)], pointGreenCurve[Color.green(pixel)]);
+                    blue = Color.blue(pixel) + getColorOffset(Color.blue(pixel), pointValueCurve[Color.blue(pixel)], pointBlueCurve[Color.blue(pixel)]);
                     if (red > 255) red = 255;
                     if (green > 255) green = 255;
                     if (blue > 255) blue = 255;
