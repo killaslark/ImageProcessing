@@ -20,7 +20,7 @@
 
             <!-- everything you already have -->
             <ImageView
-                android:id="@+id/imageView"
+                android:id="@+id/imageViewBefore"
                 android:layout_width="172dp"
                 android:layout_height="166dp"
                 android:layout_marginEnd="8dp"
@@ -32,7 +32,7 @@
                 app:layout_constraintTop_toTopOf="parent" />
 
             <ImageView
-                android:id="@+id/imageView1"
+                android:id="@+id/imageViewAfter"
                 android:layout_width="172dp"
                 android:layout_height="166dp"
                 android:layout_marginEnd="8dp"
@@ -111,17 +111,33 @@
                 android:text="Select Image"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/imageView1" />
+                app:layout_constraintTop_toBottomOf="@+id/imageViewAfter" />
 
             <Button
                 android:id="@+id/feature"
                 android:layout_marginEnd="8dp"
                 android:layout_marginStart="8dp"
                 android:layout_marginTop="8dp"
-                android:text="Feature"
+                android:text="FEATURE 1"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/menu" />
+
+            <Button
+                android:id="@+id/feature2"
+                android:layout_marginEnd="8dp"
+                android:layout_marginStart="8dp"
+                android:layout_marginTop="8dp"
+                android:text="FEATURE 2"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/feature"/>
+
+            <TextView
+                android:id="@+id/textNumber"
+                android:text="Prediction"
+                android:layout_width="match_parent"
+                android:textAlignment="center" />
 
             <com.github.mikephil.charting.charts.BarChart
                 android:id="@+id/barChartRed"
@@ -133,7 +149,7 @@
                 android:visibility="gone"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/feature" />
+                app:layout_constraintTop_toBottomOf="@+id/feature2" />
 
             <com.github.mikephil.charting.charts.BarChart
                 android:id="@+id/barChartGreen"
@@ -145,7 +161,7 @@
                 android:visibility="gone"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/feature" />
+                app:layout_constraintTop_toBottomOf="@+id/feature2" />
 
             <com.github.mikephil.charting.charts.BarChart
                 android:id="@+id/barChartBlue"
@@ -157,7 +173,7 @@
                 android:visibility="gone"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/feature" />
+                app:layout_constraintTop_toBottomOf="@+id/feature2" />
 
             <com.github.mikephil.charting.charts.BarChart
                 android:id="@+id/barChartGray"
@@ -169,9 +185,11 @@
                 android:visibility="gone"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/feature" />
+                app:layout_constraintTop_toBottomOf="@+id/feature2" />
 
         </TableLayout>
+
+
     </ScrollView>
 
 </android.support.constraint.ConstraintLayout>
