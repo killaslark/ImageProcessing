@@ -17,8 +17,9 @@ import java.util.List;
  */
 
 public class Skeletonization {
-    //List<Point> edge = new ArrayList<Point>();
-    //List<Point> intersection = new ArrayList<Point>();
+    List<Point> blackPoint = new ArrayList<Point>();
+    List<Point> edge = new ArrayList<Point>();
+    List<Point> intersection = new ArrayList<Point>();
     int[][] pixels;
     Bitmap bmp;
 
@@ -27,13 +28,15 @@ public class Skeletonization {
                                         {{0, 2, 6}, {0, 4, 6}}};
     public int prediction = -1;
     public Skeletonization(Bitmap bmp){
+        this.blackPoint.clear();
+        this.edge.clear();
+        this.intersection.clear();
         this.bmp = bmp;
         this.pixels = new int[bmp.getWidth()][bmp.getHeight()];
         this.bmp = runAlgorithm(bmp);
     }
 
     private Bitmap runAlgorithm(Bitmap bmp){
-        List<Point> blackPoint = new ArrayList<Point>();
         Bitmap altbmp = Bitmap.createBitmap(bmp.getWidth(), bmp.getHeight(), Bitmap.Config.ARGB_8888);
         for(int x = 0; x < bmp.getWidth(); x++){
             for(int y = 0; y < bmp.getHeight(); y++){
@@ -48,7 +51,7 @@ public class Skeletonization {
                 }
             }
         }
-        ZhangSuenThinning(blackPoint);
+        ZhangSuenThinning();
         pixels = postprocess(pixels);
         for(int y = 0; y < bmp.getHeight(); y++){
             for(int x = 0; x < bmp.getWidth(); x++){
@@ -69,9 +72,8 @@ public class Skeletonization {
     }
 
     // Credits to https://rosettacode.org/wiki/Zhang-Suen_thinning_algorithm
-    private void ZhangSuenThinning(List<Point> input) {
+    private void ZhangSuenThinning() {
         List<Point> toWhite = new ArrayList<Point>();
-        List<Point> blackPoint = input;
         List<Integer> changedIndex = new ArrayList<Integer>();
         boolean noChange = false;
         boolean firstStep = false;
@@ -194,7 +196,7 @@ public class Skeletonization {
 
     private int[][] pruneIntersection() {
         List<Point> toWhite = new ArrayList<Point>();
-        
+        return pixels;
     }
 
     private int[][] postprocess(int[][]pixels) {
@@ -318,8 +320,8 @@ public class Skeletonization {
         return bmp;
     }
 
-    private List<Point> generateBlackPoint() {
-        List<Point> blackPoint = new ArrayList<>();
+    private void updateBlackPoint() {
+        blackPoint.clear();
         for(int x = 0; x < pixels.length; x++) {
             for (int y = 0; y < pixels[x].length; y++) {
                 if(pixels[x][y] != 0) {
@@ -327,63 +329,60 @@ public class Skeletonization {
                 }
             }
         }
-        return blackPoint;
     }
 
-    private List<Point> generateIntersection(List<Point> blackPoint) {
-        List<Point> temp = new ArrayList<>();
+    private void updateIntersection() {
+        intersection.clear();
         for(int i = 0; i < blackPoint.size(); i++) {
             int x = blackPoint.get(i).x;
             int y = blackPoint.get(i).y;
             if (countNeighbors(x, y) > 2)
-                temp.add(blackPoint.get(i));
+                intersection.add(blackPoint.get(i));
         }
-        return temp;
     }
 
-    private List<Point> generateEdge(List<Point> blackPoint) {
-        List<Point> temp = new ArrayList<>();
+    private void updateEdge() {
+        edge.clear();
         for(int i = 0; i < blackPoint.size(); i++) {
             int x = blackPoint.get(i).x;
             int y = blackPoint.get(i).y;
             if (countNeighbors(x, y) == 1)
-                temp.add(blackPoint.get(i));
+                edge.add(blackPoint.get(i));
         }
-        return temp;
     }
 
     public int predict() {
-        List<Point> blackPoint = generateBlackPoint();
-        List<Point> intersection = generateIntersection(blackPoint);
-        List<Point> edge = generateEdge(blackPoint);
-        int nint = intersection.size();
-        int nedge = edge.size();
-        Log.d("PREDICT EDGE", Integer.toString(nedge));
-        Log.d("PREDICT INTERSECTION", Integer.toString(nint));
+        updateBlackPoint();
+        updateEdge();
+        updateIntersection();
+        int n_int = intersection.size();
+        int n_edge = edge.size();
+        Log.d("PREDICT EDGE", Integer.toString(n_edge));
+        Log.d("PREDICT INTERSECTION", Integer.toString(n_int));
 
-        if (nedge == 0) {
+        if (n_edge == 0) {
             // 0 or 8
-            if (nint > 0) {
+            if (n_int > 0) {
                 return 8;
             } else {
                 return 0;
             }
-        } else if (nedge == 1 && nint == 1) {
+        } else if (n_edge == 1 && n_int == 1) {
             // 6 or 9
             if (intersection.get(0).y > edge.get(0).y) {
                 return 6;
             } else {
                 return 9;
             }
-        } else if (nedge == 2) {
+        } else if (n_edge == 2) {
             // 1 or 2 or 3 or 4 or 5 or 7
-            if (nint > 0) {
+            if (n_int > 0) {
                 return 4;
             } else {
                 // 1 or 2 or 5 or 7
                 return 1;
             }
-        } else if (nedge == 3) {
+        } else if (n_edge == 3) {
             return 3;
         } else {
             return -1;

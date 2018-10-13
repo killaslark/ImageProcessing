@@ -528,7 +528,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void SelectSecondFeature() {
-        final CharSequence[] items ={"Thinning","Predict","Cancel"};
+        final CharSequence[] items ={"Thinning","Chaincode Predict","Cancel"};
         AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
         builder.setTitle("Second Feature");
         builder.setItems(items, new DialogInterface.OnClickListener() {
@@ -542,7 +542,8 @@ public class MainActivity extends AppCompatActivity {
                         imageViewAfter.setImageBitmap(secondBitmap);
                         prediction = skeletonization.prediction;
                     }
-                } else if (items[which].equals("Predict")) {
+                    updateTextView(textNumber);
+                } else if (items[which].equals("Chaincode Predict")) {
                     predictSingleCharacter();
                 } else if (items[which].equals("Cancel")) {
                     dialog.dismiss();
