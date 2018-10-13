@@ -42,6 +42,7 @@ public class Skeletonization {
         }
         int[][] temp = pixels;
         pixels = thin(temp);
+        pixels = postprocess(pixels);
         for(int y = 0; y < bmp.getHeight(); y++){
             for(int x = 0; x < bmp.getWidth(); x++){
                 //Log.d("PIXEL",Integer.toString(pixels[x][y]) );
@@ -99,6 +100,51 @@ public class Skeletonization {
 //        }
         return pixels;
     }
+
+    private int[][] postprocess(int[][]pixels) {
+        List<Point> toWhite = new ArrayList<Point>();
+        for(int i=0;i < 2; i++) {
+            for (int x = 0; x < pixels.length; x++) {
+                for (int y = 0; y < pixels[x].length; y++) {
+                    int c = pixels[x][y];
+                    if(c == 0)
+                        continue;
+                    int     e = pixels[x+1][y],
+                            ne = pixels[x+1][y-1],
+                            n = pixels[x][y-1],
+                            nw = pixels[x-1][y-1],
+                            w = pixels[x-1][y],
+                            sw = pixels[x-1][y+1],
+                            s = pixels[x][y+1],
+                            se = pixels[x+1][y+1];
+
+                    if(i == 0)
+                    {
+                        //North bias
+                        if(!(c != 0 && !(n != 0 &&
+                                ((e != 0 && ne == 0 && sw == 0 && (w == 0 || s == 0)) ||
+                                        (w != 0 && nw == 0 && se == 0 && (e == 0 || s == 0))))))
+                        {
+                            toWhite.add(new Point(x,y));
+                        }
+                    } else {
+                        //South bias
+                        if(!(c != 0 && !(s != 0 &&
+                                ((e != 0 && se == 0 && nw == 0 && (w == 0 || n == 0)) ||
+                                        (w != 0 && sw == 0 && ne == 0 && (e == 0 || n == 0))))))
+                        {
+                            toWhite.add(new Point(x,y));
+                        }
+                    }
+                }
+            }
+            for (Point p : toWhite)
+                pixels[p.x][p.y] = 0;
+            toWhite.clear();
+        }
+        return pixels;
+    }
+
     private int conditionOne(int[][] pixels, int x, int y){
         int count = 0;
         if(pixels[x][y-1] != 0)
