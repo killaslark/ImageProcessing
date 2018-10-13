@@ -17,15 +17,14 @@ import java.util.List;
  */
 
 public class Skeletonization {
-    List<Point> edge = new ArrayList<Point>();
-    List<Point> intersection = new ArrayList<Point>();
+    //List<Point> edge = new ArrayList<Point>();
+    //List<Point> intersection = new ArrayList<Point>();
     int[][] pixels;
     Bitmap bmp;
 
     final static int[][] nbrs = {{0, -1}, {1, -1}, {1, 0}, {1, 1}, {0, 1} ,{-1, 1} ,{-1, 0}, {-1, -1}, {0, -1}};
     final static int[][][] nbrGroups = {{{0, 2, 4}, {2, 4, 6}},
                                         {{0, 2, 6}, {0, 4, 6}}};
-
     public int prediction = -1;
     public Skeletonization(Bitmap bmp){
         this.bmp = bmp;
@@ -59,9 +58,8 @@ public class Skeletonization {
         }
 
         Log.d("OKK", "RUNNING");
-        generateGeometricProperty(pixels);
         prediction = predict();
-        Log.d("OKK", Integer.toString(intersection.size()));
+        Log.d("PREDICT", Integer.toString(prediction));
         return altbmp;
     }
 
@@ -194,6 +192,11 @@ public class Skeletonization {
         return pixels;
     }
 
+    private int[][] pruneIntersection() {
+        List<Point> toWhite = new ArrayList<Point>();
+        
+    }
+
     private int[][] postprocess(int[][]pixels) {
         List<Point> toWhite = new ArrayList<Point>();
         for(int i=0;i < 2; i++) {
@@ -315,94 +318,75 @@ public class Skeletonization {
         return bmp;
     }
 
-    private void generateGeometricProperty(int[][] pixels) {
-        int neighbor = 0;
-        for(int i = 1; i< bmp.getWidth()-1;i++) {
-            for(int j = 1; j < bmp.getHeight()-1;j++) {
-                if(isPixelBlack(pixels[i][j])) {
-                    neighbor = conditionOne(pixels, i, j);
-                    if (neighbor == 1) {
-                        edge.add(new Point(i,j));
-                    } else if (neighbor >= 3)
-                        intersection.add(new Point(i,j));
+    private List<Point> generateBlackPoint() {
+        List<Point> blackPoint = new ArrayList<>();
+        for(int x = 0; x < pixels.length; x++) {
+            for (int y = 0; y < pixels[x].length; y++) {
+                if(pixels[x][y] != 0) {
+                    blackPoint.add(new Point(x, y));
                 }
             }
         }
+        return blackPoint;
+    }
+
+    private List<Point> generateIntersection(List<Point> blackPoint) {
+        List<Point> temp = new ArrayList<>();
+        for(int i = 0; i < blackPoint.size(); i++) {
+            int x = blackPoint.get(i).x;
+            int y = blackPoint.get(i).y;
+            if (countNeighbors(x, y) > 2)
+                temp.add(blackPoint.get(i));
+        }
+        return temp;
+    }
+
+    private List<Point> generateEdge(List<Point> blackPoint) {
+        List<Point> temp = new ArrayList<>();
+        for(int i = 0; i < blackPoint.size(); i++) {
+            int x = blackPoint.get(i).x;
+            int y = blackPoint.get(i).y;
+            if (countNeighbors(x, y) == 1)
+                temp.add(blackPoint.get(i));
+        }
+        return temp;
     }
 
     public int predict() {
-        // Sort endpoints by increasing y value
-        Collections.sort(edge, new Comparator<Point>() {
-            @Override
-            public int compare(Point o1, Point o2) {
-                int y = Integer.compare(o1.y, o2.y);
-                if (y != 0)
-                    return y;
-                return Integer.compare(o1.x, o2.x);
+        List<Point> blackPoint = generateBlackPoint();
+        List<Point> intersection = generateIntersection(blackPoint);
+        List<Point> edge = generateEdge(blackPoint);
+        int nint = intersection.size();
+        int nedge = edge.size();
+        Log.d("PREDICT EDGE", Integer.toString(nedge));
+        Log.d("PREDICT INTERSECTION", Integer.toString(nint));
+
+        if (nedge == 0) {
+            // 0 or 8
+            if (nint > 0) {
+                return 8;
+            } else {
+                return 0;
             }
-        });
-        // Combine close intersections into one
-        Iterator<Point> it = intersection.iterator();
-        if (it.hasNext()) {
-            Point curr = it.next();
-            while (it.hasNext()) {
-                Point next = it.next();
-                if (Math.abs(curr.x - next.x) < 5 && Math.abs(curr.y - next.y) < 5) {
-                    it.remove();
-                } else {
-                    curr = next;
-                }
+        } else if (nedge == 1 && nint == 1) {
+            // 6 or 9
+            if (intersection.get(0).y > edge.get(0).y) {
+                return 6;
+            } else {
+                return 9;
             }
+        } else if (nedge == 2) {
+            // 1 or 2 or 3 or 4 or 5 or 7
+            if (nint > 0) {
+                return 4;
+            } else {
+                // 1 or 2 or 5 or 7
+                return 1;
+            }
+        } else if (nedge == 3) {
+            return 3;
+        } else {
+            return -1;
         }
-        // Count number of endpoints and intersections
-        switch (edge.size()) {
-            case 0: // 0, 8
-                switch (intersection.size()) {
-                    case 0:
-                        return 0;
-                    default:
-                        return 8;
-                }
-            case 1: // 6, 9
-                switch (intersection.size()) {
-                    case 1:
-                        Point e = edge.get(0);
-                        Point i = intersection.get(0);
-                        if (e.y > i.y) {
-                            return 9;
-                        } else {
-                            return 6;
-                        }
-                }
-            case 2: // 2, 4, 5, 7
-                switch (intersection.size()) {
-                    case 0:
-                        Point e0 = edge.get(0);
-                        Point e1 = edge.get(1);
-                        if (e0.x > e1.x) {
-                            return 5;
-                        }
-                        if (e1.x > bmp.getWidth() / 2) {
-                            return 2;
-                        } else {
-                            return 7;
-                        }
-                    case 1:
-                        return 4;
-                }
-            case 3: // 1, 3
-                switch (intersection.size()) {
-                    case 1:
-                        Point e0 = edge.get(0);
-                        Point e1 = edge.get(1);
-                        Point e2 = edge.get(2);
-                        if (e1.x < e0.x && e1.x < e2.x) {
-                            return 1;
-                        } else if (e1.x > e0.x && e1.x > e2.x) {
-                            return 3;
-                        }
-                }
-        }
-        return -1;
     }
 }
