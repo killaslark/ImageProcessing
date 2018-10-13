@@ -6,6 +6,7 @@ import android.graphics.Point;
 import android.util.Log;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -43,6 +44,7 @@ public class Skeletonization {
         int[][] temp = pixels;
         pixels = thin(temp);
         pixels = postprocess(pixels);
+        pixels = removeFalseEndpoint(pixels);
         for(int y = 0; y < bmp.getHeight(); y++){
             for(int x = 0; x < bmp.getWidth(); x++){
                 //Log.d("PIXEL",Integer.toString(pixels[x][y]) );
@@ -101,7 +103,7 @@ public class Skeletonization {
         return pixels;
     }
 
-    private int[][] postprocess(int[][]pixels) {
+    private int[][] postprocess(int[][] pixels) {
         List<Point> toWhite = new ArrayList<Point>();
         for(int i=0;i < 2; i++) {
             for (int x = 0; x < pixels.length; x++) {
@@ -143,6 +145,92 @@ public class Skeletonization {
             toWhite.clear();
         }
         return pixels;
+    }
+
+    private int[][] removeFalseEndpoint(int[][] pixels){
+        List<Point> toWhite = new ArrayList<Point>();
+        int threshold = 15;
+        //Hilangin cabang
+        for (int x = 0; x < pixels.length; x++) {
+            for (int y = 0; y < pixels[x].length; y++) {
+                if(pixels[x][y] == 0)
+                    continue;
+
+                int numOfBlack = conditionOne(pixels,x,y);
+                if(numOfBlack == 1){
+                    Log.d("ENDPOINT", Integer.toString(x) + " " + Integer.toString(y));
+                    int i = 0;
+                    List<Point> sequenceOfBlack = new ArrayList<>();
+                    sequenceOfBlack.add(new Point(x,y));
+                    for(i = 0;i < threshold;i++){
+                        List<Point> blackNeighbor = getBlackNeighbor(pixels,sequenceOfBlack.get(sequenceOfBlack.size()-1).x,
+                                sequenceOfBlack.get(sequenceOfBlack.size()-1).y);
+                        if(blackNeighbor.size() <= 2){
+                            for (Point p : blackNeighbor) {
+                                boolean add = true;
+                                for(Point p1 : sequenceOfBlack) {
+                                    if(p.x == p1.x && p.y == p1.y)
+                                        add =false;
+                                }
+                                if(add)
+                                    sequenceOfBlack.add(p);
+                            }
+                        } else if(blackNeighbor.size() > 3) {
+                            //Asumsi size > 3 tidak boleh dihapus cabangnya (cth angka 4)
+                            i = threshold;
+                            break;
+                        }else{
+                            //Penanganan supaya titik tidak putus
+                            for(int j = 0; j < blackNeighbor.size();j++){
+                                for(Point p1 : sequenceOfBlack) {
+                                    if(blackNeighbor.get(j).x == p1.x && blackNeighbor.get(j).y == p1.y) {
+                                        blackNeighbor.remove(j);
+                                        break;
+                                    }
+                                }
+                            }
+                            int xdiff1 = sequenceOfBlack.get(sequenceOfBlack.size()-1).x-blackNeighbor.get(0).x,
+                                    ydiff1 = sequenceOfBlack.get(sequenceOfBlack.size()-1).y - blackNeighbor.get(0).y,
+                                    xdiff2 = sequenceOfBlack.get(sequenceOfBlack.size()-1).x - blackNeighbor.get(1).x,
+                                    ydiff2 = sequenceOfBlack.get(sequenceOfBlack.size()-1).y - blackNeighbor.get(1).y;
+                            if(Integer.signum(xdiff1) == -Integer.signum(xdiff2) || Integer.signum(ydiff1) == -Integer.signum(ydiff2))
+                                sequenceOfBlack.remove(sequenceOfBlack.size()-1);
+                            break;
+                        }
+                    }
+                    for (Point p : sequenceOfBlack)
+                        Log.d("BLACK", Integer.toString(p.x) + " " + Integer.toString(p.y));
+                    if(i < threshold)
+                    {
+                        for (Point p : sequenceOfBlack)
+                            pixels[p.x][p.y] = 0;
+                    }
+                    sequenceOfBlack.clear();
+                }
+            }
+        }
+        return pixels;
+    }
+
+    private List<Point> getBlackNeighbor(int[][] pixels, int x, int y){
+        List<Point> black = new ArrayList<Point>();
+        if(pixels[x][y-1] != 0)
+            black.add(new Point(x,y-1));
+        if(pixels[x+1][y-1] != 0)
+            black.add(new Point(x+1,y-1));
+        if(pixels[x+1][y] != 0)
+            black.add(new Point(x+1,y));
+        if(pixels[x+1][y+1] != 0)
+            black.add(new Point(x+1,y+1));
+        if(pixels[x][y+1] != 0)
+            black.add(new Point(x,y+1));
+        if(pixels[x-1][y+1] != 0)
+            black.add(new Point(x-1,y+1));
+        if(pixels[x-1][y] != 0)
+            black.add(new Point(x-1,y));
+        if(pixels[x-1][y-1] != 0)
+            black.add(new Point(x-1,y-1));
+        return black;
     }
 
     private int conditionOne(int[][] pixels, int x, int y){
