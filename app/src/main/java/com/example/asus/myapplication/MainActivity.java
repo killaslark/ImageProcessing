@@ -56,6 +56,7 @@ public class MainActivity extends AppCompatActivity {
     private Point[] pointRedCurve = new Point[256];
     private Point[] pointGreenCurve = new Point[256];
     private Point[] pointBlueCurve = new Point[256];
+    private int prediction = -1;
 
     private int[] chainFrequency = new int[8];
     private int[] operand = new int[2];
@@ -539,6 +540,7 @@ public class MainActivity extends AppCompatActivity {
                         Skeletonization skeletonization = new Skeletonization(bitmap);
                         secondBitmap = skeletonization.getBitmap();
                         imageViewAfter.setImageBitmap(secondBitmap);
+                        prediction = skeletonization.prediction;
                     }
                 } else if (items[which].equals("Predict")) {
                     predictSingleCharacter();
@@ -794,22 +796,22 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void updateTextView(TextView textView){
-        String operand1 = operand[0] == -1 ? "Operand1" : Integer.toString(operand[0]);
-        String operand2 = operand[1] == -1 ? "Operand2" : Integer.toString(operand[1]);
-        String operatorText = "Operator";
-        String count = "";
-
-        if(operator == 10) operatorText = "+";
-        else if(operator == 11) operatorText = "-";
-
-        if(operand[0] != -1 && operand[1] != -1 && operator != -1)
-        {
-            if(operator == 10) count = " = " + Integer.toString(operand[0]+operand[1]);
-            else if(operator == 11) count = " = " + Integer.toString(operand[0]-operand[1]);
-        }
-
-        String predictedText = operand1 + " " + operatorText + " " + operand2 + count;
-        textView.setText(predictedText);
+//        String operand1 = operand[0] == -1 ? "Operand1" : Integer.toString(operand[0]);
+//        String operand2 = operand[1] == -1 ? "Operand2" : Integer.toString(operand[1]);
+//        String operatorText = "Operator";
+//        String count = "";
+//
+//        if(operator == 10) operatorText = "+";
+//        else if(operator == 11) operatorText = "-";
+//
+//        if(operand[0] != -1 && operand[1] != -1 && operator != -1)
+//        {
+//            if(operator == 10) count = " = " + Integer.toString(operand[0]+operand[1]);
+//            else if(operator == 11) count = " = " + Integer.toString(operand[0]-operand[1]);
+//        }
+//
+//        String predictedText = operand1 + " " + operatorText + " " + operand2 + count;
+        textView.setText(Integer.toString(prediction));
     }
 
 }
