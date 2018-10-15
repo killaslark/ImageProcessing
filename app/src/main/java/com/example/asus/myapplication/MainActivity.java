@@ -40,7 +40,7 @@ public class MainActivity extends AppCompatActivity {
     private TextView valueCurveText, redCurveText, greenCurveText, blueCurveText, textNumber, textThreshold;
 
     private ImageView imageViewBefore,imageViewAfter;
-    private Integer REQUEST_CAMERA = 1, SELECT_FILE = 0, MIN_THRESHOLD = 0, MAX_THRESHOLD = 100;
+    private Integer REQUEST_CAMERA = 1, SELECT_FILE = 0, MIN_THRESHOLD = 0, MAX_THRESHOLD = 1000;
     private BarChart barChartRed,barChartGreen,barChartBlue,barChartGray;
     private Bitmap bitmap;
     private Bitmap secondBitmap;
@@ -59,8 +59,8 @@ public class MainActivity extends AppCompatActivity {
     private Point[] pointRedCurve = new Point[256];
     private Point[] pointGreenCurve = new Point[256];
     private Point[] pointBlueCurve = new Point[256];
-    private int prediction = -1;
-    private int currentThreshold = 7;
+    private char prediction = '-';
+    private int currentThreshold = 70;
 
     private int[] chainFrequency = new int[8];
     private int[] operand = new int[2];
@@ -572,7 +572,7 @@ public class MainActivity extends AppCompatActivity {
                 } else if (items[which].equals("Chaincode-Predict")) {
                     predictwithAvg();
                 } else if (items[which].equals("Thinning-Predict")) {
-                    textNumber.setText("Prediction Number : "+ Integer.toString(prediction));
+                    textNumber.setText("Prediction Character : "+ prediction);
                 } else if (items[which].equals("Cancel")) {
                     dialog.dismiss();
                 }

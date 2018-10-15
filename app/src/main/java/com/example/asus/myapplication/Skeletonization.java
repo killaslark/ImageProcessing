@@ -31,7 +31,7 @@ public class Skeletonization {
     final static int[][] nbrs = {{0, -1}, {1, -1}, {1, 0}, {1, 1}, {0, 1} ,{-1, 1} ,{-1, 0}, {-1, -1}, {0, -1}};
     final static int[][][] nbrGroups = {{{0, 2, 4}, {2, 4, 6}},
                                         {{0, 2, 6}, {0, 4, 6}}};
-    public int prediction = -1;
+    public char prediction = '-';
     public Skeletonization(Bitmap bmp, int threshold){
         this.thresholdPoint = threshold;
         this.blackPoint.clear();
@@ -69,7 +69,7 @@ public class Skeletonization {
 
         Log.d("OKK", "RUNNING");
         prediction = predict();
-        Log.d("PREDICT", Integer.toString(prediction));
+        Log.d("PREDICT", ""+prediction);
         return altbmp;
     }
 
@@ -247,7 +247,7 @@ public class Skeletonization {
 
     private int[][] removeFalseEndpoint(int[][] pixels){
         List<Point> toWhite = new ArrayList<Point>();
-        int threshold = thresholdPoint*blackPoint.size() /100;
+        int threshold = thresholdPoint*blackPoint.size() /1000;
         Log.d("threshold : ", ""+threshold);
         //Hilangin cabang
         for (int x = 0; x < pixels.length; x++) {
@@ -273,7 +273,7 @@ public class Skeletonization {
                                 if(add)
                                     sequenceOfBlack.add(p);
                             }
-                        } else if (blackNeighbor.size() > 3) {
+                        } else if (blackNeighbor.size() > 3 ) {
                             //Asumsi size > 3 tidak boleh dihapus cabangnya (cth angka 4)
                             i = threshold;
                             break;
@@ -437,31 +437,19 @@ public class Skeletonization {
 
     private void setNeighborIntersection(List<Point> intersection) {
         List<Point> temp = new ArrayList<Point>();
-        double threshold = thresholdPoint*blackPoint.size() /200;
+        double threshold = thresholdPoint*blackPoint.size() /2000;
         for(int i = 0; i < intersection.size(); i++) {
             for(int j = i + 1; j < intersection.size(); j++) {
                 double distance;
                 distance = Math.sqrt( Math.pow(intersection.get(j).x - intersection.get(i).x,2) + Math.pow(Math.abs(intersection.get(j).y - intersection.get(i).y),2));
-//                Log.d("Distance :" , ""+distance);
-//                Log.d("Threshold :", ""+threshold);
                 if (distance < threshold) {
                     temp.add(intersection.get(j));
                 }
-//                if (intersection.get(j).equals(intersection.get(i).x + 1, intersection.get(i).y) ||
-//                        intersection.get(j).equals(intersection.get(i).x + 1, intersection.get(i).y - 1) ||
-//                        intersection.get(j).equals(intersection.get(i).x, intersection.get(i).y - 1) ||
-//                        intersection.get(j).equals(intersection.get(i).x - 1, intersection.get(i).y - 1) ||
-//                        intersection.get(j).equals(intersection.get(i).x - 1, intersection.get(i).y) ||
-//                        intersection.get(j).equals(intersection.get(i).x - 1, intersection.get(i).y - 1) ||
-//                        intersection.get(j).equals(intersection.get(i).x, intersection.get(i).y + 1) ||
-//                        intersection.get(j).equals(intersection.get(i).x + 1, intersection.get(i).y + 1)
-//                        ) {
-//                    temp.add(intersection.get(j));
-//                }
             }
         }
         neighbourIntersection = new ArrayList<Point>(
                 new HashSet<>(temp));
+        intersection.removeAll(neighbourIntersection);
     }
 
     private void updateEdge() {
@@ -474,18 +462,19 @@ public class Skeletonization {
         }
     }
 
-    public int predict() {
+    public char predict() {
+        int threshold = thresholdPoint*blackPoint.size() /1000;
         updateBlackPoint();
         updateEdge();
         updateIntersection();
         setNeighborIntersection(intersection);
-        int n_int = intersection.size() - neighbourIntersection.size();
+        int n_int = intersection.size();
 
         setNeighborIntersection(intersectionThree);
-        int n_int_3 = intersectionThree.size() - neighbourIntersection.size();
+        int n_int_3 = intersectionThree.size();
 
         setNeighborIntersection(intersectionMoreThanThree);
-        int n_int_more_3 = intersectionMoreThanThree.size() - neighbourIntersection.size();
+        int n_int_more_3 = intersectionMoreThanThree.size();
 
         int n_edge = edge.size();
         Log.d("PREDICT EDGE", Integer.toString(n_edge));
@@ -494,13 +483,13 @@ public class Skeletonization {
         Log.d("PREDICT INTERSECT > 3", Integer.toString(n_int_more_3));
 
         if (n_edge == 0) {
-            // 0 or 8
-            if (n_int > 0) {
+            // o, 0 or 8
+            if (n_int == 2) {
                 return 8;
             } else {
                 return 0;
             }
-        } else if (n_edge == 1 && n_int == 1) {
+        } else if (n_edge == 1) {
             // 6 or 9
             if (intersection.get(0).y > edge.get(0).y) {
                 return 6;
@@ -508,41 +497,95 @@ public class Skeletonization {
                 return 9;
             }
         } else if (n_edge == 2) {
-            // 1 or 2 or 3 or 4 or 5 or 7
-            if (n_int > 0) {
-                return 4;
-            } else {
-                // 1 or 2 or 3 or 5 or 7
+            // 2 or 4 or 5 or 7, A, I
+
+
+            if (n_int == 0) {
+                //5, 2, I, -, 7
                 Point edge_0 = edge.get(0);
                 Point edge_1 = edge.get(1);
-                int xdiff = edge_0.x - edge_1.x;
-                int ydiff = edge_0.y - edge_1.y;
-                Log.d("PREDICT XDIFF", Integer.toString(xdiff));
-                Log.d("PREDICT YDIFF", Integer.toString(ydiff));
-                if (Math.abs(xdiff) < 5) {
-                    return 3;
-                } else if (xdiff < 0 && ydiff > 0) {
+
+                if (edge_0.x < edge_1.x) {
                     return 5;
+                }
+                if (edge_1.x > bmp.getWidth() / 2) {
+                    return 2;
+                } else if (Math.abs(edge_1.x - edge_0.x) < 3){
+                    return 'I';
+                } else if (Math.abs(edge_0.y - edge_1.y) < 3){
+                    return '-';
                 } else {
-                    float manhattan_distance = Math.abs(xdiff) + Math.abs(ydiff);
-                    Log.d("PREDICT AREA", Integer.toString(bmp.getHeight() * bmp.getWidth()));
-                    manhattan_distance = manhattan_distance * 1;
-                    Log.d("PREDICT MANHATTAN", Integer.toString((int)manhattan_distance));
-                    if(manhattan_distance >= 65 && manhattan_distance < 75) {
-                        return 7;
-                    } else if (manhattan_distance >= 75 && manhattan_distance < 95) {
-                        return 2;
-                    } else if (manhattan_distance >= 95 && manhattan_distance < 105) {
-                        return 1;
+                    return 7;
+                }
+            } else if (n_int == 1) {
+                return 4;
+            } else if (n_int == 2) {
+                return 'A';
+            } else {
+                return '-';
+            }
+        } else if (n_edge == 3){
+            // 1 or 3, F,f
+            if (n_int == 1) {
+                Point edge_0 = edge.get(0);
+                Point edge_1 = edge.get(1);
+                Point edge_2 = edge.get(2);
+                Log.d("E0", edge_0.toString());
+                Log.d("E1", edge_1.toString());
+                Log.d("E2", edge_2.toString());
+
+                if (Math.abs(edge_1.x - edge_0.x) < threshold && edge_1.x < edge_2.x) {
+                    return 1;
+                } else if (Math.abs(edge_1.x - edge_0.x) < threshold && Math.abs(edge_1.x - edge_2.x) < threshold) {
+                    return 3;
+                } else {
+                    return '-';
+                }
+            } else if (n_int == 1) {
+                return 'F';
+            }
+        } else if (n_edge == 4) {
+            // x,X, +, f, H, $
+
+            Point edge_0 = edge.get(0);
+            Point edge_1 = edge.get(1);
+            Point edge_2 = edge.get(2);
+            Point edge_3 = edge.get(3);
+            Log.d("E0", edge_0.toString());
+            Log.d("E1", edge_1.toString());
+            Log.d("E2", edge_2.toString());
+            Log.d("E3", edge_3.toString());
+
+            if (n_int == 1) {
+                if (Math.abs(intersection.get(0).x - (edge_0.x + ((edge_3.x - edge_0.x) /2)) ) < 5)  {
+                    if ((Math.abs(edge_0.y - edge_2.y) < 5) && (Math.abs(edge_1.y - edge_3.y) < 5)) {
+                        return 'x';
                     } else {
-                        return -1;
+                        return '+';
+                    }
+                } else {
+                    return 'f';
+                }
+            } else if (n_int == 2) {
+                Log.d("I0", intersection.get(0).toString());
+                Log.d("I1", intersection.get(1).toString());
+
+                if (Math.abs(intersection.get(0).y - intersection.get(1).y) < 5) {
+                        return 'H';
+
+                } else {
+                    if (Math.abs(edge_0.x - edge_1.x) < 5) {
+                        if ( (edge_2.y - edge_0.y) > 0) {
+                            return 'k';
+                        } else {
+                            return 'K';
+                        }
+                    } else {
+                        return '$';
                     }
                 }
             }
-        } else if (n_edge == 3){
-            return 1;
-        } else {
-            return -1;
         }
+        return '-';
     }
 }
