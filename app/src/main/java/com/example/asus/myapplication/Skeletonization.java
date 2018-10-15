@@ -9,6 +9,7 @@ import android.util.Log;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 
@@ -20,14 +21,19 @@ public class Skeletonization {
     List<Point> blackPoint = new ArrayList<Point>();
     List<Point> edge = new ArrayList<Point>();
     List<Point> intersection = new ArrayList<Point>();
+    List<Point> intersectionMoreThanThree = new ArrayList<Point>();
+    List<Point> intersectionThree = new ArrayList<Point>();
+    List<Point> neighbourIntersection = new ArrayList<Point>();
     int[][] pixels;
     Bitmap bmp;
+    int thresholdPoint;
 
     final static int[][] nbrs = {{0, -1}, {1, -1}, {1, 0}, {1, 1}, {0, 1} ,{-1, 1} ,{-1, 0}, {-1, -1}, {0, -1}};
     final static int[][][] nbrGroups = {{{0, 2, 4}, {2, 4, 6}},
                                         {{0, 2, 6}, {0, 4, 6}}};
     public int prediction = -1;
-    public Skeletonization(Bitmap bmp){
+    public Skeletonization(Bitmap bmp, int threshold){
+        this.thresholdPoint = threshold;
         this.blackPoint.clear();
         this.edge.clear();
         this.intersection.clear();
@@ -241,16 +247,16 @@ public class Skeletonization {
 
     private int[][] removeFalseEndpoint(int[][] pixels){
         List<Point> toWhite = new ArrayList<Point>();
-        int threshold = 15;
+        int threshold = thresholdPoint*blackPoint.size() /100;
+        Log.d("threshold : ", ""+threshold);
         //Hilangin cabang
         for (int x = 0; x < pixels.length; x++) {
             for (int y = 0; y < pixels[x].length; y++) {
                 if(pixels[x][y] == 0)
                     continue;
-
                 int numOfBlack = conditionOne(pixels,x,y);
                 if(numOfBlack == 1){
-                    Log.d("ENDPOINT", Integer.toString(x) + " " + Integer.toString(y));
+//                    Log.d("ENDPOINT", Integer.toString(x) + " " + Integer.toString(y));
                     int i = 0;
                     List<Point> sequenceOfBlack = new ArrayList<>();
                     sequenceOfBlack.add(new Point(x,y));
@@ -262,12 +268,12 @@ public class Skeletonization {
                                 boolean add = true;
                                 for(Point p1 : sequenceOfBlack) {
                                     if(p.x == p1.x && p.y == p1.y)
-                                        add =false;
+                                        add = false;
                                 }
                                 if(add)
                                     sequenceOfBlack.add(p);
                             }
-                        } else if(blackNeighbor.size() > 3) {
+                        } else if (blackNeighbor.size() > 3) {
                             //Asumsi size > 3 tidak boleh dihapus cabangnya (cth angka 4)
                             i = threshold;
                             break;
@@ -290,8 +296,8 @@ public class Skeletonization {
                             break;
                         }
                     }
-                    for (Point p : sequenceOfBlack)
-                        Log.d("BLACK", Integer.toString(p.x) + " " + Integer.toString(p.y));
+//                    for (Point p : sequenceOfBlack)
+//                        Log.d("BLACK", Integer.toString(p.x) + " " + Integer.toString(p.y));
                     if(i < threshold)
                     {
                         for (Point p : sequenceOfBlack)
@@ -418,9 +424,36 @@ public class Skeletonization {
         for(int i = 0; i < blackPoint.size(); i++) {
             int x = blackPoint.get(i).x;
             int y = blackPoint.get(i).y;
-            if (countNeighbors(x, y) > 2)
+            if (countNeighbors(x, y) > 2) {
                 intersection.add(blackPoint.get(i));
+                if (countNeighbors(x, y) == 3) {
+                    intersectionThree.add(blackPoint.get(i));
+                } else {
+                    intersectionMoreThanThree.add(blackPoint.get(i));
+                }
+            }
         }
+    }
+
+    private void setNeighborIntersection(List<Point> intersection) {
+        List<Point> temp = new ArrayList<Point>();
+        for(int i = 0; i < intersection.size(); i++) {
+            for(int j = i + 1; j < intersection.size(); j++){
+                if (intersection.get(j).equals(intersection.get(i).x+1,intersection.get(i).y) ||
+                    intersection.get(j).equals(intersection.get(i).x+1,intersection.get(i).y-1) ||
+                    intersection.get(j).equals(intersection.get(i).x,intersection.get(i).y-1) ||
+                    intersection.get(j).equals(intersection.get(i).x-1,intersection.get(i).y-1) ||
+                    intersection.get(j).equals(intersection.get(i).x-1,intersection.get(i).y) ||
+                    intersection.get(j).equals(intersection.get(i).x-1,intersection.get(i).y-1) ||
+                    intersection.get(j).equals(intersection.get(i).x,intersection.get(i).y+1) ||
+                    intersection.get(j).equals(intersection.get(i).x+1,intersection.get(i).y+1)
+                    ) {
+                    temp.add(intersection.get(j));
+                }
+            }
+        }
+        neighbourIntersection = new ArrayList<Point>(
+                new HashSet<>(temp));
     }
 
     private void updateEdge() {
@@ -437,10 +470,20 @@ public class Skeletonization {
         updateBlackPoint();
         updateEdge();
         updateIntersection();
-        int n_int = intersection.size();
+        setNeighborIntersection(intersection);
+        int n_int = intersection.size() - neighbourIntersection.size();
+
+        setNeighborIntersection(intersectionThree);
+        int n_int_3 = intersectionThree.size() - neighbourIntersection.size();
+
+        setNeighborIntersection(intersectionMoreThanThree);
+        int n_int_more_3 = intersectionMoreThanThree.size() - neighbourIntersection.size();
+
         int n_edge = edge.size();
         Log.d("PREDICT EDGE", Integer.toString(n_edge));
-        Log.d("PREDICT INTERSECTION", Integer.toString(n_int));
+        Log.d("PREDICT INTERSECT", Integer.toString(n_int));
+        Log.d("PREDICT INTERSECT 3", Integer.toString(n_int_3));
+        Log.d("PREDICT INTERSECT > 3", Integer.toString(n_int_more_3));
 
         if (n_edge == 0) {
             // 0 or 8
@@ -488,6 +531,8 @@ public class Skeletonization {
                     }
                 }
             }
+        } else if (n_edge == 3){
+            return 1;
         } else {
             return -1;
         }

@@ -43,6 +43,7 @@ public class MainActivity extends AppCompatActivity {
     private Bitmap bitmap;
     private Bitmap secondBitmap;
 
+
     private boolean curves = false;
     private int pixel;
     private int[] redValue = new int[256];
@@ -57,6 +58,7 @@ public class MainActivity extends AppCompatActivity {
     private Point[] pointGreenCurve = new Point[256];
     private Point[] pointBlueCurve = new Point[256];
     private int prediction = -1;
+    private int thresholdPoint = 3;
 
     private int[] chainFrequency = new int[8];
     private int[] operand = new int[2];
@@ -378,8 +380,6 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
             Toast.makeText(this, "Unable to equalize the Image", Toast.LENGTH_LONG).show();
         }
-        // update the histogram
-        //setColor();
     }
 
     private int getColorOffset(int color, Point value, Point rgb)
@@ -528,7 +528,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void SelectSecondFeature() {
-        final CharSequence[] items ={"Thinning","Chaincode Predict","Cancel"};
+        final CharSequence[] items ={"Thinning","Thinning-Predict","Chaincode-Predict","Cancel"};
         AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
         builder.setTitle("Second Feature");
         builder.setItems(items, new DialogInterface.OnClickListener() {
@@ -537,14 +537,16 @@ public class MainActivity extends AppCompatActivity {
                 if(items[which].equals("Thinning")) {
                     if(bitmap != null)
                     {
-                        Skeletonization skeletonization = new Skeletonization(bitmap);
+                        Skeletonization skeletonization = new Skeletonization(bitmap,thresholdPoint);
                         secondBitmap = skeletonization.getBitmap();
                         imageViewAfter.setImageBitmap(secondBitmap);
                         prediction = skeletonization.prediction;
+
                     }
-                    updateTextView(textNumber);
-                } else if (items[which].equals("Chaincode Predict")) {
-                    predictSingleCharacter();
+                } else if (items[which].equals("Chaincode-Predict")) {
+                    predictwithAvg();
+                } else if (items[which].equals("Thinning-Predict")) {
+                    textNumber.setText(Integer.toString(prediction));
                 } else if (items[which].equals("Cancel")) {
                     dialog.dismiss();
                 }
@@ -582,7 +584,7 @@ public class MainActivity extends AppCompatActivity {
         builder.show();
     }
 
-    private void predictSingleCharacter() {
+    private void predictwithAvg() {
         int width = bitmap.getWidth();
         int height = bitmap.getHeight();
         Vector chainCode = new Vector();
@@ -596,10 +598,8 @@ public class MainActivity extends AppCompatActivity {
                 pixel = bitmap.getPixel(i,j);
                 if (isPixelBlack(pixel)) {
                     // i itu x, j itu y
-                    Log.d("Found",i+","+ j);
                     iStart = i;
                     jStart = j;
-                    Log.d("Size ", width+","+height);
                     found = true;
                 }
             }
@@ -632,7 +632,6 @@ public class MainActivity extends AppCompatActivity {
         }
 
         for (int i = 0; i < 8; i++) {
-            Log.d("Arah[" + i + "] :", chainFrequency[i] + " kemunculan");
             chainFrequency[i] = 0;
         }
 
@@ -641,6 +640,8 @@ public class MainActivity extends AppCompatActivity {
         Log.d("Number Predicted", Integer.toString(idx));
     }
 
+
+
     private boolean isPixelBlack(int pixel) {
         int limit = 40;
         return (Color.red(pixel) < limit && Color.green(pixel) < limit && Color.blue(pixel) < limit);
@@ -648,9 +649,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void checkTimur(int iKeliling, int jKeliling, Bitmap bitmap, Vector chainCode, int iStart,int jStart) {
         if (iKeliling + 1 < bitmap.getWidth()) {
-
             int pixel = bitmap.getPixel(iKeliling + 1, jKeliling);
-//            Log.d("Timur" , iKeliling +","+ jKeliling);
             if (isPixelBlack(pixel)) {
                 chainCode.add(0);
                 chainFrequency[0]++;
@@ -666,7 +665,6 @@ public class MainActivity extends AppCompatActivity {
 
     private  void checkTenggara(int iKeliling, int jKeliling, Bitmap bitmap, Vector chainCode, int iStart,int jStart) {
         if (jKeliling + 1 < bitmap.getHeight() && iKeliling + 1 < bitmap.getWidth()){
-//            Log.d("Tenggara" , iKeliling +","+jKeliling);
             int pixel = bitmap.getPixel(iKeliling + 1, jKeliling + 1);
             if (isPixelBlack(pixel)) {
                 chainCode.add(1);
@@ -683,7 +681,6 @@ public class MainActivity extends AppCompatActivity {
     }
     private  void checkSelatan(int iKeliling, int jKeliling, Bitmap bitmap, Vector chainCode, int iStart,int jStart) {
         if (jKeliling + 1 < bitmap.getHeight()){
-//            Log.d("Selatan" , iKeliling +","+ jKeliling);
             int pixel = bitmap.getPixel(iKeliling, jKeliling + 1);
             if (isPixelBlack(pixel)) {
                 chainCode.add(2);
@@ -699,7 +696,6 @@ public class MainActivity extends AppCompatActivity {
     }
     private  void checkBaratDaya(int iKeliling, int jKeliling, Bitmap bitmap, Vector chainCode, int iStart,int jStart) {
         if (iKeliling - 1 >= 0 && jKeliling + 1 < bitmap.getHeight()){
-//            Log.d("BaratDaya" , iKeliling +","+jKeliling);
             int pixel = bitmap.getPixel(iKeliling - 1, jKeliling + 1);
             if (isPixelBlack(pixel)) {
                 chainCode.add(3);
@@ -717,7 +713,6 @@ public class MainActivity extends AppCompatActivity {
     }
     private  void checkBarat(int iKeliling, int jKeliling, Bitmap bitmap, Vector chainCode, int iStart,int jStart) {
         if (iKeliling - 1 >= 0){
-//            Log.d("Barat" , iKeliling +","+jKeliling);
             int pixel = bitmap.getPixel(iKeliling - 1, jKeliling );
             if (isPixelBlack(pixel)) {
                 chainCode.add(4);
@@ -733,7 +728,6 @@ public class MainActivity extends AppCompatActivity {
     }
     private  void checkBaratLaut(int iKeliling, int jKeliling, Bitmap bitmap, Vector chainCode, int iStart,int jStart) {
         if (jKeliling - 1 >= 0 && iKeliling -1 >= 0){
-//            Log.d("BaratLaut" , iKeliling +","+ jKeliling);
             int pixel = bitmap.getPixel(iKeliling - 1, jKeliling - 1);
             if (isPixelBlack(pixel)) {
                 chainCode.add(5);
@@ -750,7 +744,6 @@ public class MainActivity extends AppCompatActivity {
     }
     private  void checkUtara(int iKeliling, int jKeliling, Bitmap bitmap, Vector chainCode, int iStart,int jStart) {
         if (jKeliling - 1 >= 0){
-//            Log.d("Utara" , iKeliling +","+ jKeliling);
             int pixel = bitmap.getPixel(iKeliling, jKeliling - 1);
             if (isPixelBlack(pixel)) {
                 chainCode.add(6);
@@ -766,7 +759,6 @@ public class MainActivity extends AppCompatActivity {
     }
     private  void checkTimurLaut(int iKeliling, int jKeliling, Bitmap bitmap, Vector chainCode, int iStart,int jStart) {
         if (iKeliling + 1 < bitmap.getHeight() && jKeliling - 1 >= 0){
-//            Log.d("TimurLaut" , iKeliling +","+jKeliling);
             int pixel = bitmap.getPixel(iKeliling + 1, jKeliling - 1);
             if (isPixelBlack(pixel)) {
                 chainCode.add(7);
@@ -786,10 +778,8 @@ public class MainActivity extends AppCompatActivity {
     private double[] normalize10Histogram(int[] arr) {
         double[] newHist = new double[arr.length];
         int sum = 0;
-
         for(int i = 0;i < arr.length;i++)
             sum += arr[i];
-
         for(int i = 0;i < arr.length;i++)
             newHist[i] = (float)arr[i] / (float)sum;
 
@@ -797,22 +787,22 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void updateTextView(TextView textView){
-//        String operand1 = operand[0] == -1 ? "Operand1" : Integer.toString(operand[0]);
-//        String operand2 = operand[1] == -1 ? "Operand2" : Integer.toString(operand[1]);
-//        String operatorText = "Operator";
-//        String count = "";
-//
-//        if(operator == 10) operatorText = "+";
-//        else if(operator == 11) operatorText = "-";
-//
-//        if(operand[0] != -1 && operand[1] != -1 && operator != -1)
-//        {
-//            if(operator == 10) count = " = " + Integer.toString(operand[0]+operand[1]);
-//            else if(operator == 11) count = " = " + Integer.toString(operand[0]-operand[1]);
-//        }
-//
-//        String predictedText = operand1 + " " + operatorText + " " + operand2 + count;
-        textView.setText(Integer.toString(prediction));
+        String operand1 = operand[0] == -1 ? "Operand1" : Integer.toString(operand[0]);
+        String operand2 = operand[1] == -1 ? "Operand2" : Integer.toString(operand[1]);
+        String operatorText = "Operator";
+        String count = "";
+
+        if(operator == 10) operatorText = "+";
+        else if(operator == 11) operatorText = "-";
+
+        if(operand[0] != -1 && operand[1] != -1 && operator != -1)
+        {
+            if(operator == 10) count = " = " + Integer.toString(operand[0]+operand[1]);
+            else if(operator == 11) count = " = " + Integer.toString(operand[0]-operand[1]);
+        }
+
+        String predictedText = operand1 + " " + operatorText + " " + operand2 + count;
+        textView.setText(predictedText);
     }
 
 }
