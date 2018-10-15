@@ -437,19 +437,27 @@ public class Skeletonization {
 
     private void setNeighborIntersection(List<Point> intersection) {
         List<Point> temp = new ArrayList<Point>();
+        double threshold = thresholdPoint*blackPoint.size() /200;
         for(int i = 0; i < intersection.size(); i++) {
-            for(int j = i + 1; j < intersection.size(); j++){
-                if (intersection.get(j).equals(intersection.get(i).x+1,intersection.get(i).y) ||
-                    intersection.get(j).equals(intersection.get(i).x+1,intersection.get(i).y-1) ||
-                    intersection.get(j).equals(intersection.get(i).x,intersection.get(i).y-1) ||
-                    intersection.get(j).equals(intersection.get(i).x-1,intersection.get(i).y-1) ||
-                    intersection.get(j).equals(intersection.get(i).x-1,intersection.get(i).y) ||
-                    intersection.get(j).equals(intersection.get(i).x-1,intersection.get(i).y-1) ||
-                    intersection.get(j).equals(intersection.get(i).x,intersection.get(i).y+1) ||
-                    intersection.get(j).equals(intersection.get(i).x+1,intersection.get(i).y+1)
-                    ) {
+            for(int j = i + 1; j < intersection.size(); j++) {
+                double distance;
+                distance = Math.sqrt( Math.pow(intersection.get(j).x - intersection.get(i).x,2) + Math.pow(Math.abs(intersection.get(j).y - intersection.get(i).y),2));
+//                Log.d("Distance :" , ""+distance);
+//                Log.d("Threshold :", ""+threshold);
+                if (distance < threshold) {
                     temp.add(intersection.get(j));
                 }
+//                if (intersection.get(j).equals(intersection.get(i).x + 1, intersection.get(i).y) ||
+//                        intersection.get(j).equals(intersection.get(i).x + 1, intersection.get(i).y - 1) ||
+//                        intersection.get(j).equals(intersection.get(i).x, intersection.get(i).y - 1) ||
+//                        intersection.get(j).equals(intersection.get(i).x - 1, intersection.get(i).y - 1) ||
+//                        intersection.get(j).equals(intersection.get(i).x - 1, intersection.get(i).y) ||
+//                        intersection.get(j).equals(intersection.get(i).x - 1, intersection.get(i).y - 1) ||
+//                        intersection.get(j).equals(intersection.get(i).x, intersection.get(i).y + 1) ||
+//                        intersection.get(j).equals(intersection.get(i).x + 1, intersection.get(i).y + 1)
+//                        ) {
+//                    temp.add(intersection.get(j));
+//                }
             }
         }
         neighbourIntersection = new ArrayList<Point>(
