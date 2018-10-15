@@ -16,6 +16,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -34,15 +35,16 @@ import java.util.Vector;
 
 public class MainActivity extends AppCompatActivity {
 
+    ;
     private CurveView valueCurveView,redCurveView, greenCurveView, blueCurveView;
-    private TextView valueCurveText, redCurveText, greenCurveText, blueCurveText, textNumber;
+    private TextView valueCurveText, redCurveText, greenCurveText, blueCurveText, textNumber, textThreshold;
 
     private ImageView imageViewBefore,imageViewAfter;
-    private Integer REQUEST_CAMERA = 1, SELECT_FILE = 0;
+    private Integer REQUEST_CAMERA = 1, SELECT_FILE = 0, MIN_THRESHOLD = 0, MAX_THRESHOLD = 100;
     private BarChart barChartRed,barChartGreen,barChartBlue,barChartGray;
     private Bitmap bitmap;
     private Bitmap secondBitmap;
-
+    private SeekBar seekBar;
 
     private boolean curves = false;
     private int pixel;
@@ -58,7 +60,7 @@ public class MainActivity extends AppCompatActivity {
     private Point[] pointGreenCurve = new Point[256];
     private Point[] pointBlueCurve = new Point[256];
     private int prediction = -1;
-    private int thresholdPoint = 3;
+    private int currentThreshold = 7;
 
     private int[] chainFrequency = new int[8];
     private int[] operand = new int[2];
@@ -116,6 +118,8 @@ public class MainActivity extends AppCompatActivity {
         Button feature = (Button) findViewById(R.id.feature);
         Button secondFeature = (Button) findViewById(R.id.feature2);
         textNumber = (TextView) findViewById(R.id.textNumber);
+        textThreshold = (TextView) findViewById(R.id.textThreshold);
+        seekBar = (SeekBar) findViewById(R.id.setThreshold);
 
         initiateVariables();
 
@@ -137,6 +141,28 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 SelectSecondFeature();
+            }
+        });
+
+        seekBar.setMax(MAX_THRESHOLD-MIN_THRESHOLD);
+        seekBar.setProgress(currentThreshold-MIN_THRESHOLD);
+        textThreshold.setText("Current Threshold : " + currentThreshold);
+
+        seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                currentThreshold = progress + MIN_THRESHOLD;
+                textThreshold.setText("Current Threshold : " + currentThreshold);
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+
             }
         });
 
@@ -537,7 +563,7 @@ public class MainActivity extends AppCompatActivity {
                 if(items[which].equals("Thinning")) {
                     if(bitmap != null)
                     {
-                        Skeletonization skeletonization = new Skeletonization(bitmap,thresholdPoint);
+                        Skeletonization skeletonization = new Skeletonization(bitmap,currentThreshold);
                         secondBitmap = skeletonization.getBitmap();
                         imageViewAfter.setImageBitmap(secondBitmap);
                         prediction = skeletonization.prediction;
@@ -546,7 +572,7 @@ public class MainActivity extends AppCompatActivity {
                 } else if (items[which].equals("Chaincode-Predict")) {
                     predictwithAvg();
                 } else if (items[which].equals("Thinning-Predict")) {
-                    textNumber.setText(Integer.toString(prediction));
+                    textNumber.setText("Prediction Number : "+ Integer.toString(prediction));
                 } else if (items[which].equals("Cancel")) {
                     dialog.dismiss();
                 }
