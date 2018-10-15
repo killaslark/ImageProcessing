@@ -485,40 +485,40 @@ public class Skeletonization {
         if (n_edge == 0) {
             // o, 0 or 8
             if (n_int == 2) {
-                return 8;
+                return '8';
             } else {
-                return 0;
+                return '0';
             }
         } else if (n_edge == 1) {
             // 6 or 9
             if (intersection.get(0).y > edge.get(0).y) {
-                return 6;
+                return '6';
             } else {
-                return 9;
+                return '9';
             }
         } else if (n_edge == 2) {
             // 2 or 4 or 5 or 7, A, I
-
-
             if (n_int == 0) {
                 //5, 2, I, -, 7
                 Point edge_0 = edge.get(0);
                 Point edge_1 = edge.get(1);
+                Log.d("EO ", edge_0.toString());
+                Log.d("E1 ", edge_1.toString());
 
-                if (edge_0.x < edge_1.x) {
-                    return 5;
-                }
-                if (edge_1.x > bmp.getWidth() / 2) {
-                    return 2;
-                } else if (Math.abs(edge_1.x - edge_0.x) < 3){
+
+                if (Math.abs(edge_1.x - edge_0.x) < 3){
                     return 'I';
-                } else if (Math.abs(edge_0.y - edge_1.y) < 3){
+                } else if (Math.abs(edge_0.y - edge_1.y) < 4){
                     return '-';
+                } else if (edge_0.y > edge_1.y) {
+                    return '5';
+                } else if (edge_1.x > (bmp.getWidth()/2) ){
+                    return '2';
                 } else {
-                    return 7;
+                    return '7';
                 }
             } else if (n_int == 1) {
-                return 4;
+                return '4';
             } else if (n_int == 2) {
                 return 'A';
             } else {
@@ -534,12 +534,10 @@ public class Skeletonization {
                 Log.d("E1", edge_1.toString());
                 Log.d("E2", edge_2.toString());
 
-                if (Math.abs(edge_1.x - edge_0.x) < threshold && edge_1.x < edge_2.x) {
-                    return 1;
-                } else if (Math.abs(edge_1.x - edge_0.x) < threshold && Math.abs(edge_1.x - edge_2.x) < threshold) {
-                    return 3;
+                if (intersection.get(0).x < edge_2.x) {
+                    return '1';
                 } else {
-                    return '-';
+                    return '3';
                 }
             } else if (n_int == 1) {
                 return 'F';
