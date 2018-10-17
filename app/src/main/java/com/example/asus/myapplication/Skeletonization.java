@@ -12,6 +12,7 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Vector;
 
 /**
  * Created by Winarto on 9/26/2018.
@@ -25,7 +26,7 @@ public class Skeletonization {
     List<Point> intersectionThree = new ArrayList<Point>();
     List<Point> neighbourIntersection = new ArrayList<Point>();
     int[][] pixels;
-    Bitmap bmp;
+    Bitmap bmp,realBitmap;
     int thresholdPoint;
 
     final static int[][] nbrs = {{0, -1}, {1, -1}, {1, 0}, {1, 1}, {0, 1} ,{-1, 1} ,{-1, 0}, {-1, -1}, {0, -1}};
@@ -37,6 +38,7 @@ public class Skeletonization {
         this.blackPoint.clear();
         this.edge.clear();
         this.intersection.clear();
+        this.realBitmap = bmp;
         this.bmp = bmp;
         this.pixels = new int[bmp.getWidth()][bmp.getHeight()];
         this.bmp = runAlgorithm(bmp);
@@ -407,6 +409,7 @@ public class Skeletonization {
     public Bitmap getBitmap() {
         return bmp;
     }
+    public Bitmap getRealBitmap() {return realBitmap;}
 
     private void updateBlackPoint() {
         blackPoint.clear();
@@ -463,12 +466,16 @@ public class Skeletonization {
     }
 
     public char predict() {
-        int threshold = thresholdPoint*blackPoint.size() /1000;
+        int[] chainFrequency = new int[8];
+        chainFrequency = getChainFrequencyFromBitmap(realBitmap);
+        double[] normalizedFreq = normalize10Histogram(chainFrequency);
         updateBlackPoint();
         updateEdge();
         updateIntersection();
         setNeighborIntersection(intersection);
         int n_int = intersection.size();
+        sortPoint(edge);
+        sortPoint(intersection);
 
         setNeighborIntersection(intersectionThree);
         int n_int_3 = intersectionThree.size();
@@ -483,86 +490,235 @@ public class Skeletonization {
         Log.d("PREDICT INTERSECT > 3", Integer.toString(n_int_more_3));
 
         if (n_edge == 0) {
-            // o, 0 or 8
+            // o, 0, 8, B, D, O
+
+            //B,8
             if (n_int == 2) {
-                return '8';
+                if (normalizedFreq[7] < 0.01) {
+                    return 'B';
+                } else {
+                    return '8';
+                }
             } else {
-                return '0';
+                if (normalizedFreq[7] < 0.01) {
+                    return 'D';
+                } else if ( Math.abs((normalizedFreq[0] / normalizedFreq[2]) - 0.5) < 0.1) {
+                    return '0';
+                } else {
+                    return 'o';
+                }
             }
         } else if (n_edge == 1) {
-            // 6 or 9
+            // @, P, 6 or 9, e
+
+            //6
             if (intersection.get(0).y > edge.get(0).y) {
                 return '6';
+            //@, P, 9, e
             } else {
-                return '9';
+                if (normalizedFreq[6] > 0.25) {
+                    return 'P';
+                } else {
+
+                    if (intersection.get(0).x < edge.get(0).x) {
+                        if (intersection.get(0).x < bmp.getWidth()/2) {
+                            return 'e';
+                        } else {
+                            return '@';
+                        }
+                    } else {
+                        return '9';
+                    }
+
+                }
             }
         } else if (n_edge == 2) {
-            // 2 or 4 or 5 or 7, A, I
+            // -,2, 4,5 ,7, A, I,/, <, >, C, J , L , M , N, Q, R, S, U, V, W, Z, ^,[, ], {, }, ~, (, ) , a, b, d, g, p, q, s,
+
             if (n_int == 0) {
-                //5, 2, I, -, 7
+                //5, 2, I,-, 7, / , <, >, C, J, L, M, N, S, U, V, W, Z. ^, [,],{,},~, G,
                 Point edge_0 = edge.get(0);
                 Point edge_1 = edge.get(1);
-                Log.d("EO ", edge_0.toString());
-                Log.d("E1 ", edge_1.toString());
 
+                // - U, V, W
+                if (Math.abs(edge_0.y - edge_1.y) < (0.06*bmp.getHeight())) {
+                    for(int i = 0; i < 8; i++) {
+                        Log.d(""+i, ""+chainFrequency[i]+" "+normalizedFreq[i]);
+                    }
+                    if (isPixelBlack(bmp.getPixel(edge_0.x+1,edge_0.y))) {
+                        return '^';
+                    } else {
 
-                if (Math.abs(edge_1.x - edge_0.x) < 3){
-                    return 'I';
-                } else if (Math.abs(edge_0.y - edge_1.y) < 4){
-                    return '-';
-                } else if (edge_0.y > edge_1.y) {
+                    }
+                // <,C.[,{, (
+                } else if (edge_0.x > (bmp.getWidth()/2) && edge_1.x > (bmp.getWidth()/2)) {
+                    if (normalizedFreq[5] < 0.05 && normalizedFreq[7] < 0.05){
+                        return '[';
+                    } else if (Math.abs(edge_1.x - edge_0.x) > 0.1*bmp.getWidth()) {
+                        return 'G';
+                    }  else if (normalizedFreq[6] > 0.2) {
+                        if (normalizedFreq[4] > 0.07) {
+                            return '{';
+                        } else {
+                            return '(';
+                        }
+                    }  else if (normalizedFreq[4] > 0.2){
+                        return '<';
+                    } else {
+                        return 'C';
+                    }
+                // >, 7,],}, ), I
+                } else if (edge_0.x < (bmp.getWidth()/2) && edge_1.x < (bmp.getWidth()/2)) {
+                    // I,]
+                    if (normalizedFreq[1] < 0.008 && normalizedFreq[3] < 0.008){
+                         if (normalizedFreq[5] == 0) {
+                             return 'I';
+                         } else {
+                             return ']';
+                         }
+                     } else if (normalizedFreq[1] < 0.01) {
+                         return '7';
+                     } else if (normalizedFreq[4] < 0.07) {
+                         return ')';
+                     } else if (normalizedFreq[6] > 0.2) {
+                         return '}';
+                     } else {
+                         return '>';
+                     }
+
+                // 5, N , S, /, J,
+                } else if (edge_0.x > edge_1.x) {
                     return '5';
-                } else if (edge_1.x > (bmp.getWidth()/2) ){
+
+                // 2, L, Z
+                } else if (edge_0.x  < edge_1.x ){
                     return '2';
                 } else {
                     return '7';
                 }
+
+            // 4
             } else if (n_int == 1) {
-                return '4';
+                    return '4';
+
+            // A ,R, Q , a, b, d, g, p, q
             } else if (n_int == 2) {
-                return 'A';
-            } else {
-                return '-';
-            }
-        } else if (n_edge == 3){
-            // 1 or 3, F,f
-            if (n_int == 1) {
+                // a, b, d, g, p, q, Q
+
                 Point edge_0 = edge.get(0);
                 Point edge_1 = edge.get(1);
-                Point edge_2 = edge.get(2);
-                Log.d("E0", edge_0.toString());
-                Log.d("E1", edge_1.toString());
-                Log.d("E2", edge_2.toString());
+                Point intersec_0 = intersection.get(0);
+                Point intersec_1 = intersection.get(1);
 
-                if (intersection.get(0).x < edge_2.x) {
-                    return '1';
+
+                //a , b, d, g , p, q, Q
+                if (edge_0.y < intersection.get(0).y ) {
+
+                    //a, b, p
+                    if (edge_0.x < bmp.getWidth()/2) {
+                        if (intersection.get(0).x > bmp.getWidth()/2) {
+                            return 'a';
+                        } else {
+                            if ((intersec_0.y - edge_0.y) > (edge_1.y - intersec_1.y)) {
+                                return 'b';
+                            } else {
+                                return 'p';
+                            }
+                        }
+                    //d,g,q,Q
+                    } else {
+                        if (intersec_0.y > bmp.getHeight()/2 && intersec_1.y > bmp.getHeight()/2) {
+                            return 'Q';
+                        }
+                        if (edge_1.x < bmp.getWidth()/2) {
+                            return 'g';
+                        } else if ((intersec_0.y - edge_0.y) > (edge_1.y - intersec_1.y)){
+                            return 'd';
+                        } else {
+                            return 'q';
+                        }
+                    }
+                // A R
                 } else {
-                    return '3';
+                    if (normalizedFreq[7] < 0.01) {
+                        return 'R';
+                    } else {
+                        return 'A';
+                    }
                 }
-            } else if (n_int == 1) {
-                return 'F';
+            } else if (n_int == 4) {
+                return '&';
             }
-        } else if (n_edge == 4) {
-            // x,X, +, f, H, $
+        // 1,3, E, , T, Y, F, n , r, h, y, u
+        } else if (n_edge == 3){
 
             Point edge_0 = edge.get(0);
             Point edge_1 = edge.get(1);
             Point edge_2 = edge.get(2);
-            Point edge_3 = edge.get(3);
             Log.d("E0", edge_0.toString());
             Log.d("E1", edge_1.toString());
             Log.d("E2", edge_2.toString());
-            Log.d("E3", edge_3.toString());
+            Log.d("I0", intersection.get(0).toString());
+
+            // E,F
+            if (edge_0.x > bmp.getWidth()/2 && edge_1.x > bmp.getWidth()/2  ) {
+                if (edge_2.x > bmp.getWidth()/2) {
+                    return 'E';
+                } else {
+                    return 'F';
+                }
+
+            // n,h, 1
+            } else if (edge_1.y > 0.8*bmp.getHeight() && edge_2.y > 0.8*bmp.getHeight()) {
+                if ( Math.abs(edge_1.y - intersection.get(0).y) < 0.025*bmp.getHeight()) {
+                    return '1';
+                } else if ( (intersection.get(0).y - edge_0.y) > 0.3*(edge_1.y - intersection.get(0).y)) {
+                    return 'h';
+                } else {
+                    return 'n';
+                }
+            // T,y, Y, r, u
+            } else if (Math.abs(edge_0.y - edge_1.y) < 0.025*bmp.getHeight()) {
+                if (Math.abs(edge_0.x - intersection.get(0).x) < 0.025 * bmp.getWidth() || Math.abs(edge_1.x - intersection.get(0).x) < 0.025 * bmp.getWidth()) {
+                    if (intersection.get(0).x > 0.5*bmp.getWidth()) {
+                        return 'u';
+                    } else {
+                        return 'r';
+                    }
+                }else {
+                    if (Math.abs(edge_0.y - intersection.get(0).y) < 0.025 * bmp.getHeight()) {
+                        return 'T';
+                    } else{
+                        if (Math.abs(edge_2.x - intersection.get(0).x) < 0.025 * bmp.getHeight()) {
+                            return 'Y';
+                        } else {
+                            return 'y';
+                        }
+                    }
+
+                }
+            // 3, r (kalo kebetulan tanduk r nya pendek)
+            } else if (edge_1.x > intersection.get(0).x) {
+                return 'r';
+            } else {
+                return '3';
+            }
+        } else if (n_edge == 4) {
+            // x,X, +, f, H, $, t
+            Point edge_0 = edge.get(0);
+            Point edge_1 = edge.get(1);
+            Point edge_2 = edge.get(2);
+            Point edge_3 = edge.get(3);
 
             if (n_int == 1) {
-                if (Math.abs(intersection.get(0).x - (edge_0.x + ((edge_3.x - edge_0.x) /2)) ) < 5)  {
-                    if ((Math.abs(edge_0.y - edge_2.y) < 5) && (Math.abs(edge_1.y - edge_3.y) < 5)) {
+                if (edge_0.x < edge_1.x)   {
                         return 'x';
-                    } else {
-                        return '+';
-                    }
                 } else {
-                    return 'f';
+                    if (edge_0.x >edge_3.x) {
+                        return 'f';
+                    } else {
+                        return 't';
+                    }
                 }
             } else if (n_int == 2) {
                 Log.d("I0", intersection.get(0).toString());
@@ -583,7 +739,216 @@ public class Skeletonization {
                     }
                 }
             }
+        } else if (n_edge >4) {
+            return '*';
         }
         return '-';
+    }
+
+    public void sortPoint(List<Point> listPoint) {
+        int n = listPoint.size();
+        Point temp;
+        for(int i=0; i < n; i++){
+            for(int j=1; j < (n-i); j++){
+                if(listPoint.get(j-1).y > listPoint.get(j).y){
+                    //swap elements
+                    temp = listPoint.get(j-1);
+                    listPoint.set(j-1,listPoint.get(j));
+                    listPoint.set(j,temp);
+                } else {
+                    if (listPoint.get(j-1).y == listPoint.get(j).y) {
+                        if (listPoint.get(j-1).x > listPoint.get(j).x) {
+                            temp = listPoint.get(j-1);
+                            listPoint.set(j-1,listPoint.get(j));
+                            listPoint.set(j,temp);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    public int[] getChainFrequencyFromBitmap(Bitmap bitmap) {
+        int[] chainFrequency = new int[8];
+        int width = bitmap.getWidth();
+        int height = bitmap.getHeight();
+        Vector chainCode = new Vector();
+        int pixel;
+        int iStart = 0,jStart = 0;
+        boolean found = false;
+
+        for (int j = 0; j < height && !found; j++) {
+            for (int i = 0; i < width && !found; i++){
+                pixel = bitmap.getPixel(i,j);
+                if (isPixelBlack(pixel)) {
+                    // i itu x, j itu y
+                    iStart = i;
+                    jStart = j;
+                    found = true;
+                }
+            }
+        }
+        int iKeliling = iStart, jKeliling = jStart;
+        // Mulai keliling
+        checkTimur(iKeliling, jKeliling, bitmap, chainCode, chainFrequency, iStart, jStart);
+
+        return chainFrequency;
+    }
+
+    public char predictFromChaincode(double[][] characterFrequency,char[] character, int[] chainFrequency) {
+        double minSum = -1;
+        char idx = '-';
+        double[] normalizedFreq = normalize10Histogram(chainFrequency);
+        for(int i = 0;i<12;i++) {
+            double sum = 0;
+            for (int j = 0; j < 8; j++) {
+                sum += Math.abs(characterFrequency[i][j] - normalizedFreq[j]);
+            }
+            if (sum < minSum || minSum == -1) {
+                idx = character[i];
+                minSum = sum;
+            }
+        }
+        return idx;
+    }
+
+
+    public void checkTimur(int iKeliling, int jKeliling, Bitmap bitmap, Vector chainCode,int[] chainFrequency, int iStart,int jStart) {
+        if (iKeliling + 1 < bitmap.getWidth()) {
+            int pixel = bitmap.getPixel(iKeliling + 1, jKeliling);
+            if (isPixelBlack(pixel)) {
+                chainCode.add(0);
+                chainFrequency[0]++;
+                iKeliling++;
+                if (iKeliling != iStart || jKeliling != jStart) {
+                    checkUtara(iKeliling,jKeliling,bitmap,chainCode,chainFrequency,iStart,jStart);
+                }
+            } else {
+                checkTenggara(iKeliling,jKeliling,bitmap,chainCode,chainFrequency,iStart,jStart);
+            }
+        }
+    }
+
+    public  void checkTenggara(int iKeliling, int jKeliling, Bitmap bitmap, Vector chainCode,int[] chainFrequency, int iStart,int jStart) {
+        if (jKeliling + 1 < bitmap.getHeight() && iKeliling + 1 < bitmap.getWidth()){
+            int pixel = bitmap.getPixel(iKeliling + 1, jKeliling + 1);
+            if (isPixelBlack(pixel)) {
+                chainCode.add(1);
+                chainFrequency[1]++;
+                jKeliling++;
+                iKeliling++;
+                if (iKeliling != iStart || jKeliling != jStart) {
+                    checkTimur(iKeliling,jKeliling,bitmap,chainCode,chainFrequency,iStart,jStart);
+                }
+            } else {
+                checkSelatan(iKeliling,jKeliling,bitmap,chainCode,chainFrequency,iStart,jStart);
+            }
+        }
+    }
+    public  void checkSelatan(int iKeliling, int jKeliling, Bitmap bitmap, Vector chainCode,int[] chainFrequency, int iStart,int jStart) {
+        if (jKeliling + 1 < bitmap.getHeight()){
+            int pixel = bitmap.getPixel(iKeliling, jKeliling + 1);
+            if (isPixelBlack(pixel)) {
+                chainCode.add(2);
+                chainFrequency[2]++;
+                jKeliling++;
+                if (iKeliling != iStart || jKeliling != jStart) {
+                    checkTimur(iKeliling,jKeliling,bitmap,chainCode,chainFrequency,iStart,jStart);
+                }
+            } else {
+                checkBaratDaya(iKeliling,jKeliling,bitmap,chainCode,chainFrequency,iStart,jStart);
+            }
+        }
+    }
+    public  void checkBaratDaya(int iKeliling, int jKeliling, Bitmap bitmap, Vector chainCode,int[] chainFrequency, int iStart,int jStart) {
+        if (iKeliling - 1 >= 0 && jKeliling + 1 < bitmap.getHeight()){
+            int pixel = bitmap.getPixel(iKeliling - 1, jKeliling + 1);
+            if (isPixelBlack(pixel)) {
+                chainCode.add(3);
+                chainFrequency[3]++;
+                iKeliling--;
+                jKeliling++;
+                if (iKeliling != iStart || jKeliling != jStart) {
+                    checkTimur(iKeliling,jKeliling,bitmap,chainCode,chainFrequency,iStart,jStart);
+                }
+            } else {
+                checkBarat(iKeliling,jKeliling,bitmap,chainCode,chainFrequency,iStart,jStart);
+            }
+
+        }
+    }
+    public  void checkBarat(int iKeliling, int jKeliling, Bitmap bitmap, Vector chainCode,int[] chainFrequency, int iStart,int jStart) {
+        if (iKeliling - 1 >= 0){
+            int pixel = bitmap.getPixel(iKeliling - 1, jKeliling );
+            if (isPixelBlack(pixel)) {
+                chainCode.add(4);
+                chainFrequency[4]++;
+                iKeliling--;
+                if (iKeliling != iStart || jKeliling != jStart) {
+                    checkSelatan(iKeliling,jKeliling,bitmap,chainCode,chainFrequency,iStart,jStart);
+                }
+            } else {
+                checkBaratLaut(iKeliling, jKeliling, bitmap, chainCode,chainFrequency, iStart, jStart);
+            }
+        }
+    }
+    public  void checkBaratLaut(int iKeliling, int jKeliling, Bitmap bitmap, Vector chainCode,int[] chainFrequency, int iStart,int jStart) {
+        if (jKeliling - 1 >= 0 && iKeliling -1 >= 0){
+            int pixel = bitmap.getPixel(iKeliling - 1, jKeliling - 1);
+            if (isPixelBlack(pixel)) {
+                chainCode.add(5);
+                chainFrequency[5]++;
+                jKeliling--;
+                iKeliling--;
+                if (iKeliling != iStart || jKeliling != jStart) {
+                    checkBarat(iKeliling,jKeliling,bitmap,chainCode,chainFrequency,iStart,jStart);
+                }
+            } else {
+                checkUtara(iKeliling, jKeliling, bitmap, chainCode,chainFrequency, iStart, jStart);
+            }
+        }
+    }
+    public  void checkUtara(int iKeliling, int jKeliling, Bitmap bitmap, Vector chainCode,int[] chainFrequency, int iStart,int jStart) {
+        if (jKeliling - 1 >= 0){
+            int pixel = bitmap.getPixel(iKeliling, jKeliling - 1);
+            if (isPixelBlack(pixel)) {
+                chainCode.add(6);
+                chainFrequency[6]++;
+                jKeliling--;
+                if (iKeliling != iStart || jKeliling != jStart) {
+                    checkBarat(iKeliling,jKeliling,bitmap,chainCode,chainFrequency,iStart,jStart);
+                }
+            } else {
+                checkTimurLaut(iKeliling,jKeliling,bitmap,chainCode,chainFrequency,iStart,jStart);
+            }
+        }
+    }
+    public  void checkTimurLaut(int iKeliling, int jKeliling, Bitmap bitmap, Vector chainCode,int[] chainFrequency, int iStart,int jStart) {
+        if (iKeliling + 1 < bitmap.getHeight() && jKeliling - 1 >= 0){
+            int pixel = bitmap.getPixel(iKeliling + 1, jKeliling - 1);
+            if (isPixelBlack(pixel)) {
+                chainCode.add(7);
+                chainFrequency[7]++;
+                jKeliling--;
+                iKeliling++;
+                if (iKeliling != iStart || jKeliling != jStart) {
+                    checkBarat(iKeliling,jKeliling,bitmap,chainCode,chainFrequency,iStart,jStart);
+                }
+            } else {
+                checkTimur(iKeliling,jKeliling,bitmap,chainCode,chainFrequency,iStart,jStart);
+            }
+
+        }
+    }
+
+    private double[] normalize10Histogram(int[] arr) {
+        double[] newHist = new double[arr.length];
+        int sum = 0;
+        for(int i = 0;i < arr.length;i++)
+            sum += arr[i];
+        for(int i = 0;i < arr.length;i++)
+            newHist[i] = (float)arr[i] / (float)sum;
+
+        return newHist;
     }
 }

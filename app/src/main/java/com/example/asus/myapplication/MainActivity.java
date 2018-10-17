@@ -566,11 +566,12 @@ public class MainActivity extends AppCompatActivity {
                         Skeletonization skeletonization = new Skeletonization(bitmap,currentThreshold);
                         secondBitmap = skeletonization.getBitmap();
                         imageViewAfter.setImageBitmap(secondBitmap);
+                        imageViewBefore.setImageBitmap(bitmap);
                         prediction = skeletonization.prediction;
 
                     }
                 } else if (items[which].equals("Chaincode-Predict")) {
-                    predictwithAvg();
+                    predictwithAvg(bitmap);
                 } else if (items[which].equals("Thinning-Predict")) {
                     textNumber.setText("Prediction Character : "+ prediction);
                 } else if (items[which].equals("Cancel")) {
@@ -610,7 +611,7 @@ public class MainActivity extends AppCompatActivity {
         builder.show();
     }
 
-    private void predictwithAvg() {
+    private void predictwithAvg(Bitmap bitmap) {
         int width = bitmap.getWidth();
         int height = bitmap.getHeight();
         Vector chainCode = new Vector();
@@ -622,6 +623,7 @@ public class MainActivity extends AppCompatActivity {
         for (int j = 0; j < height && !found; j++) {
             for (int i = 0; i < width && !found; i++){
                 pixel = bitmap.getPixel(i,j);
+                Log.d("pixel "+i, ""+Color.red(pixel)+" " + Color.green(pixel)+" "+Color.blue(pixel));
                 if (isPixelBlack(pixel)) {
                     // i itu x, j itu y
                     iStart = i;
@@ -658,6 +660,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         for (int i = 0; i < 8; i++) {
+            Log.d(i+" ", ""+chainFrequency[i]);
             chainFrequency[i] = 0;
         }
 
