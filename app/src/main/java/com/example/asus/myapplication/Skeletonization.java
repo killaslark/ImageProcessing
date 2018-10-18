@@ -20,6 +20,7 @@ import java.util.Vector;
 
 public class Skeletonization {
     List<PointCustom> blackPoint = new ArrayList<PointCustom>();
+    List<PointCustom> lonePoint = new ArrayList<PointCustom>();
     List<PointCustom> edge = new ArrayList<PointCustom>();
     List<PointCustom> intersection = new ArrayList<PointCustom>();
     List<PointCustom> intersectionMoreThanThree = new ArrayList<PointCustom>();
@@ -533,13 +534,25 @@ public class Skeletonization {
         }
     }
 
+    private void updateLonePoint() {
+        lonePoint.clear();
+        for(int i = 0; i < blackPoint.size(); i++) {
+            int x = blackPoint.get(i).x;
+            int y = blackPoint.get(i).y;
+            if (countNeighbors(x, y) == 0)
+                lonePoint.add(blackPoint.get(i));
+        }
+    }
+
     public char predict() {
         int[] chainFrequency = new int[8];
         chainFrequency = getChainFrequencyFromBitmap(realBitmap);
         double[] normalizedFreq = normalize10Histogram(chainFrequency);
+        int numOfObject = countObject();
         updateBlackPoint();
         updateEdge();
         updateIntersection();
+        updateLonePoint();
         setNeighborIntersection(intersection);
         int n_int = intersection.size();
         sortPoint(edge);
@@ -552,331 +565,378 @@ public class Skeletonization {
         int n_int_more_3 = intersectionMoreThanThree.size();
 
         int n_edge = edge.size();
+        int n_lonePoint = lonePoint.size();
         Log.d("PREDICT EDGE", Integer.toString(n_edge));
         Log.d("PREDICT INTERSECT", Integer.toString(n_int));
         Log.d("PREDICT INTERSECT 3", Integer.toString(n_int_3));
         Log.d("PREDICT INTERSECT > 3", Integer.toString(n_int_more_3));
+        if(numOfObject == 1) {
+            if (n_lonePoint == 1) {
+                return '.';
+            }else if (n_edge == 0) {
+                // o, 0, 8, B, D, O
 
-        if (n_edge == 0) {
-            // o, 0, 8, B, D, O
-
-            //B,8
-            if (n_int == 2) {
-                if (normalizedFreq[7] < 0.01) {
-                    return 'B';
+                //B,8
+                if (n_int == 2) {
+                    if (normalizedFreq[7] < 0.01) {
+                        return 'B';
+                    } else {
+                        return '8';
+                    }
                 } else {
-                    return '8';
+                    if (normalizedFreq[7] < 0.01) {
+                        return 'D';
+                    } else if (Math.abs((normalizedFreq[0] / normalizedFreq[2]) - 0.5) < 0.1) {
+                        return '0';
+                    } else {
+                        return 'o';
+                    }
                 }
-            } else {
-                if (normalizedFreq[7] < 0.01) {
-                    return 'D';
-                } else if ( Math.abs((normalizedFreq[0] / normalizedFreq[2]) - 0.5) < 0.1) {
-                    return '0';
+            } else if (n_edge == 1) {
+                // @, P, 6 or 9, e
+
+                //6
+                if (intersection.get(0).y > edge.get(0).y) {
+                    return '6';
+                    //@, P, 9, e
                 } else {
-                    return 'o';
+                    if (normalizedFreq[6] > 0.25) {
+                        return 'P';
+                    } else {
+
+                        if (intersection.get(0).x < edge.get(0).x) {
+                            if (intersection.get(0).x < bmp.getWidth() / 2) {
+                                return 'e';
+                            } else {
+                                return '@';
+                            }
+                        } else {
+                            return '9';
+                        }
+
+                    }
                 }
-            }
-        } else if (n_edge == 1) {
-            // @, P, 6 or 9, e
+            } else if (n_edge == 2) {
+                // -,2, 4,5 ,7, A, I,/, <, >, C, J , L , M , N, Q, R, S, U, V, W, Z, ^,[, ], {, }, ~, (, ) , a, b, d, g, p, q, s, w v
 
-            //6
-            if (intersection.get(0).y > edge.get(0).y) {
-                return '6';
-            //@, P, 9, e
-            } else {
-                if (normalizedFreq[6] > 0.25) {
-                    return 'P';
-                } else {
+                if (n_int == 0) {
+                    //5, 2, I,-, 7, / , <, >, C, J, L, M, N, S, U, V, W, Z. ^, [,],{,},~, G,
+                    PointCustom edge_0 = edge.get(0);
+                    PointCustom edge_1 = edge.get(1);
 
-                    if (intersection.get(0).x < edge.get(0).x) {
-                        if (intersection.get(0).x < bmp.getWidth()/2) {
-                            return 'e';
-                        } else {
-                            return '@';
+                    // - U, V, W, ^, _, M, v, ~
+                    if (Math.abs(edge_0.y - edge_1.y) < (0.06 * bmp.getHeight())) {
+                        for (int i = 0; i < 8; i++) {
+                            Log.d("" + i, "" + chainFrequency[i] + " " + normalizedFreq[i]);
                         }
-                    } else {
-                        return '9';
-                    }
-
-                }
-            }
-        } else if (n_edge == 2) {
-            // -,2, 4,5 ,7, A, I,/, <, >, C, J , L , M , N, Q, R, S, U, V, W, Z, ^,[, ], {, }, ~, (, ) , a, b, d, g, p, q, s, w v
-
-            if (n_int == 0) {
-                //5, 2, I,-, 7, / , <, >, C, J, L, M, N, S, U, V, W, Z. ^, [,],{,},~, G,
-                PointCustom edge_0 = edge.get(0);
-                PointCustom edge_1 = edge.get(1);
-
-                // - U, V, W, ^, _, M, v, ~
-                if (Math.abs(edge_0.y - edge_1.y) < (0.06*bmp.getHeight())) {
-                    for(int i = 0; i < 8; i++) {
-                        Log.d(""+i, ""+chainFrequency[i]+" "+normalizedFreq[i]);
-                    }
-                    // M, _
-                    if (edge_0.y > 0.6*bmp.getHeight()){
-                        if (normalizedFreq[0] + normalizedFreq[4] > 0.7) {
-                            return '_';
+                        // M, _
+                        if (edge_0.y > 0.6 * bmp.getHeight()) {
+                            if (normalizedFreq[0] + normalizedFreq[4] > 0.7) {
+                                return '_';
+                            } else {
+                                return 'M';
+                            }
+                            // -, ~
+                        } else if (normalizedFreq[0] + normalizedFreq[4] > 0.5) {
+                            if (normalizedFreq[0] + normalizedFreq[4] > 0.7) {
+                                return '-';
+                            } else {
+                                return '~';
+                            }
+                            // U, V, W,w ,v, ^
+                        } else if (normalizedFreq[1] + normalizedFreq[7] > 0.2) {
+                            return '^';
+                        } else if (normalizedFreq[3] + normalizedFreq[5] < 0.1) {
+                            return 'U';
                         } else {
-                            return 'M';
+                            if (normalizedFreq[3] + normalizedFreq[5] > 0.15) {
+                                return 'V';
+                            } else {
+                                return 'W';
+                            }
                         }
-                    // -, ~
-                    } else  if (normalizedFreq[0] + normalizedFreq[4] > 0.5){
-                        if (normalizedFreq[0] + normalizedFreq[4] > 0.7) {
-                            return '-';
-                        } else {
-                            return '~';
-                        }
-                    // U, V, W,w ,v, ^
-                    } else if (normalizedFreq[1] + normalizedFreq[7] > 0.2){
-                        return '^';
-                    } else if (normalizedFreq[3] + normalizedFreq[5] < 0.1) {
-                        return 'U';
-                    } else {
-                        if (normalizedFreq[3] + normalizedFreq[5] > 0.15) {
-                            return 'V';
-                        } else {
-                            return 'W';
-                        }
-                    }
 
 
-                    // <,C.[,{, (, c
-                } else if (edge_0.x > (bmp.getWidth()/2) && edge_1.x > (bmp.getWidth()/2)) {
-                    if (normalizedFreq[5] < 0.05 && normalizedFreq[7] < 0.05){
-                        return '[';
-                    } else if (Math.abs(edge_1.x - edge_0.x) > 0.1*bmp.getWidth()) {
-                        return 'G';
-                    }  else if (normalizedFreq[6] > 0.2) {
-                        if (normalizedFreq[4] > 0.07) {
-                            return '{';
+                        // <,C.[,{, (, c
+                    } else if (edge_0.x > (bmp.getWidth() / 2) && edge_1.x > (bmp.getWidth() / 2)) {
+                        if (normalizedFreq[5] < 0.05 && normalizedFreq[7] < 0.05) {
+                            return '[';
+                        } else if (Math.abs(edge_1.x - edge_0.x) > 0.1 * bmp.getWidth()) {
+                            return 'G';
+                        } else if (normalizedFreq[6] > 0.2) {
+                            if (normalizedFreq[4] > 0.07) {
+                                return '{';
+                            } else {
+                                return '(';
+                            }
+                        } else if (normalizedFreq[4] > 0.2) {
+                            return '<';
+                            // c, C
                         } else {
-                            return '(';
+                            return 'C';
                         }
-                    }  else if (normalizedFreq[4] > 0.2){
-                        return '<';
-                    // c, C
-                    } else {
-                        return 'C';
-                    }
-                // >, 7,],}, ), I,l
-                } else if (edge_0.x < (bmp.getWidth()/2) && edge_1.x < (bmp.getWidth()/2)) {
-                    // I,],l
-                    if (normalizedFreq[1] < 0.008 && normalizedFreq[3] < 0.008){
-                        // I,l
-                        if (normalizedFreq[5] == 0) {
-                             return 'I';
-                         } else {
-                             return ']';
-                         }
-                     } else if (normalizedFreq[1] < 0.01) {
-                         return '7';
-                     } else if (normalizedFreq[4] < 0.07) {
-                         return ')';
-                     } else if (normalizedFreq[6] > 0.2) {
-                         return '}';
-                     } else {
-                         return '>';
-                     }
+                        // >, 7,],}, ), I,l
+                    } else if (edge_0.x < (bmp.getWidth() / 2) && edge_1.x < (bmp.getWidth() / 2)) {
+                        // I,],l
+                        if (normalizedFreq[1] < 0.008 && normalizedFreq[3] < 0.008) {
+                            // I,l
+                            if (normalizedFreq[5] == 0) {
+                                return 'I';
+                            } else {
+                                return ']';
+                            }
+                        } else if (normalizedFreq[1] < 0.01) {
+                            return '7';
+                        } else if (normalizedFreq[4] < 0.07) {
+                            return ')';
+                        } else if (normalizedFreq[6] > 0.2) {
+                            return '}';
+                        } else {
+                            return '>';
+                        }
 
-                // 5, N , S, /, J,
-                } else if (edge_0.x > edge_1.x) {
-                    for(int i = 0; i < 8; i++) {
-                        Log.d(""+i, ""+chainFrequency[i]+" "+normalizedFreq[i]);
-                    }
-                    // N,J
-                    if (normalizedFreq[1] + normalizedFreq[5] < 0.01) {
-                        return '/';
-                    } else if (normalizedFreq[2] + normalizedFreq[6] > 0.5) {
-                        if (normalizedFreq[1] + normalizedFreq[5] > 0.14) {
-                            return 'N';
-                        } else {
-                            return 'J';
+                        // 5, N , S, /, J,
+                    } else if (edge_0.x > edge_1.x) {
+                        for (int i = 0; i < 8; i++) {
+                            Log.d("" + i, "" + chainFrequency[i] + " " + normalizedFreq[i]);
                         }
-                    // S, 5, /, s
-                    } else {
-                            if ( normalizedFreq[2] + normalizedFreq[6] > 0.3) {
+                        // N,J
+                        if (normalizedFreq[1] + normalizedFreq[5] < 0.01) {
+                            return '/';
+                        } else if (normalizedFreq[2] + normalizedFreq[6] > 0.5) {
+                            if (normalizedFreq[1] + normalizedFreq[5] > 0.14) {
+                                return 'N';
+                            } else {
+                                return 'J';
+                            }
+                            // S, 5, /, s
+                        } else {
+                            if (normalizedFreq[2] + normalizedFreq[6] > 0.3) {
                                 return '5';
-                            // s,S
+                                // s,S
                             } else {
                                 return 'S';
                             }
+                        }
+
+                        // 2, L, Z,\
+                    } else if (edge_0.x < edge_1.x) {
+                        for (int i = 0; i < 8; i++) {
+                            Log.d("" + i, "" + chainFrequency[i] + " " + normalizedFreq[i]);
+                        }
+
+                        if (normalizedFreq[2] + normalizedFreq[6] > 0.6) {
+                            if (normalizedFreq[0] + normalizedFreq[4] > 0.2) {
+                                return 'L';
+                            } else {
+                                return '\\';
+                            }
+                        } else {
+                            if (normalizedFreq[1] + normalizedFreq[5] > 0.05) {
+                                return '2';
+                                //z,Z,\
+                            } else if (normalizedFreq[7] + normalizedFreq[3] < 0.01) {
+                                return '\\';
+                            } else {
+                                return 'Z';
+                            }
+                        }
                     }
 
-                // 2, L, Z,\
-                } else if (edge_0.x  < edge_1.x ){
-                    for(int i = 0; i < 8; i++) {
-                        Log.d(""+i, ""+chainFrequency[i]+" "+normalizedFreq[i]);
-                    }
-
-                    if (normalizedFreq[2] + normalizedFreq[6] > 0.6 ) {
-                        if (normalizedFreq[0] + normalizedFreq[4] > 0.2) {
-                            return 'L';
-                        } else {
-                            return '\\';
-                        }
-                    } else {
-                        if (normalizedFreq[1] + normalizedFreq[5] > 0.05) {
-                            return '2';
-                        //z,Z,\
-                        } else if (normalizedFreq[7] + normalizedFreq[3] < 0.01) {
-                            return '\\';
-                        } else {
-                            return 'Z';
-                        }
-                     }
-                }
-
-            // 4
-            } else if (n_int == 1) {
+                    // 4
+                } else if (n_int == 1) {
                     return '4';
 
-            // A ,R, Q , a, b, d, g, p, q
-            } else if (n_int == 2) {
-                // a, b, d, g, p, q, Q
+                    // A ,R, Q , a, b, d, g, p, q
+                } else if (n_int == 2) {
+                    // a, b, d, g, p, q, Q
+
+                    PointCustom edge_0 = edge.get(0);
+                    PointCustom edge_1 = edge.get(1);
+                    PointCustom intersec_0 = intersection.get(0);
+                    PointCustom intersec_1 = intersection.get(1);
+
+
+                    //a , b, d, g , p, q, Q
+                    if (edge_0.y < intersection.get(0).y) {
+
+                        //a, b, p
+                        if (edge_0.x < bmp.getWidth() / 2) {
+                            if (intersection.get(0).x > bmp.getWidth() / 2) {
+                                return 'a';
+                            } else {
+                                if ((intersec_0.y - edge_0.y) > (edge_1.y - intersec_1.y)) {
+                                    return 'b';
+                                } else {
+                                    return 'p';
+                                }
+                            }
+                            //d,g,q,Q
+                        } else {
+                            if (intersec_0.y > bmp.getHeight() / 2 && intersec_1.y > bmp.getHeight() / 2) {
+                                return 'Q';
+                            }
+                            if (edge_1.x < bmp.getWidth() / 2) {
+                                return 'g';
+                            } else if ((intersec_0.y - edge_0.y) > (edge_1.y - intersec_1.y)) {
+                                return 'd';
+                            } else {
+                                return 'q';
+                            }
+                        }
+                        // A R
+                    } else {
+                        if (normalizedFreq[7] < 0.01) {
+                            return 'R';
+                        } else {
+                            return 'A';
+                        }
+                    }
+                } else if (n_int == 4) {
+                    return '&';
+                }
+                // 1,3, E, , T, Y, F, n , r, h, y, u
+            } else if (n_edge == 3) {
 
                 PointCustom edge_0 = edge.get(0);
                 PointCustom edge_1 = edge.get(1);
-                PointCustom intersec_0 = intersection.get(0);
-                PointCustom intersec_1 = intersection.get(1);
+                PointCustom edge_2 = edge.get(2);
 
+                // E,F,
+                if (edge_0.x > bmp.getWidth() / 2 && edge_1.x > bmp.getWidth() / 2) {
+                    if (edge_2.x > bmp.getWidth() / 2) {
+                        return 'E';
+                    } else {
+                        return 'F';
+                    }
 
-                //a , b, d, g , p, q, Q
-                if (edge_0.y < intersection.get(0).y ) {
-
-                    //a, b, p
-                    if (edge_0.x < bmp.getWidth()/2) {
-                        if (intersection.get(0).x > bmp.getWidth()/2) {
-                            return 'a';
+                    // n,h, 1
+                } else if (edge_1.y > 0.8 * bmp.getHeight() && edge_2.y > 0.8 * bmp.getHeight()) {
+                    if (Math.abs(edge_1.y - intersection.get(0).y) < 0.025 * bmp.getHeight()) {
+                        return '1';
+                    } else if ((intersection.get(0).y - edge_0.y) > 0.3 * (edge_1.y - intersection.get(0).y)) {
+                        return 'h';
+                    } else {
+                        return 'n';
+                    }
+                    // T,y, Y, r, u
+                } else if (Math.abs(edge_0.y - edge_1.y) < 0.025 * bmp.getHeight()) {
+                    if (Math.abs(edge_0.x - intersection.get(0).x) < 0.025 * bmp.getWidth() || Math.abs(edge_1.x - intersection.get(0).x) < 0.025 * bmp.getWidth()) {
+                        if (intersection.get(0).x > 0.5 * bmp.getWidth()) {
+                            return 'u';
                         } else {
-                            if ((intersec_0.y - edge_0.y) > (edge_1.y - intersec_1.y)) {
-                                return 'b';
+                            return 'r';
+                        }
+                    } else {
+                        if (Math.abs(edge_0.y - intersection.get(0).y) < 0.025 * bmp.getHeight()) {
+                            return 'T';
+                        } else {
+                            if (Math.abs(edge_2.x - intersection.get(0).x) < 0.025 * bmp.getHeight()) {
+                                return 'Y';
                             } else {
-                                return 'p';
+                                return 'y';
                             }
                         }
-                    //d,g,q,Q
-                    } else {
-                        if (intersec_0.y > bmp.getHeight()/2 && intersec_1.y > bmp.getHeight()/2) {
-                            return 'Q';
-                        }
-                        if (edge_1.x < bmp.getWidth()/2) {
-                            return 'g';
-                        } else if ((intersec_0.y - edge_0.y) > (edge_1.y - intersec_1.y)){
-                            return 'd';
-                        } else {
-                            return 'q';
-                        }
+
                     }
-                // A R
+                    // 3, r (kalo kebetulan tanduk r nya pendek)
+                } else if (edge_1.x > intersection.get(0).x) {
+                    return 'r';
                 } else {
-                    if (normalizedFreq[7] < 0.01) {
-                        return 'R';
-                    } else {
-                        return 'A';
-                    }
+                    return '3';
                 }
-            } else if (n_int == 4) {
-                return '&';
-            }
-        // 1,3, E, , T, Y, F, n , r, h, y, u
-        } else if (n_edge == 3){
+            } else if (n_edge == 4) {
+                // x,X, +, f, H, $, t,
+                PointCustom edge_0 = edge.get(0);
+                PointCustom edge_1 = edge.get(1);
+                PointCustom edge_2 = edge.get(2);
+                PointCustom edge_3 = edge.get(3);
+                Log.d("E0", edge_0.toString());
+                Log.d("E1", edge_1.toString());
+                Log.d("E2", edge_2.toString());
+                Log.d("E3", edge_3.toString());
 
-            PointCustom edge_0 = edge.get(0);
-            PointCustom edge_1 = edge.get(1);
-            PointCustom edge_2 = edge.get(2);
-
-            // E,F,
-            if (edge_0.x > bmp.getWidth()/2 && edge_1.x > bmp.getWidth()/2  ) {
-                if (edge_2.x > bmp.getWidth()/2) {
-                    return 'E';
-                } else {
-                    return 'F';
-                }
-
-            // n,h, 1
-            } else if (edge_1.y > 0.8*bmp.getHeight() && edge_2.y > 0.8*bmp.getHeight()) {
-                if ( Math.abs(edge_1.y - intersection.get(0).y) < 0.025*bmp.getHeight()) {
-                    return '1';
-                } else if ( (intersection.get(0).y - edge_0.y) > 0.3*(edge_1.y - intersection.get(0).y)) {
-                    return 'h';
-                } else {
-                    return 'n';
-                }
-            // T,y, Y, r, u
-            } else if (Math.abs(edge_0.y - edge_1.y) < 0.025*bmp.getHeight()) {
-                if (Math.abs(edge_0.x - intersection.get(0).x) < 0.025 * bmp.getWidth() || Math.abs(edge_1.x - intersection.get(0).x) < 0.025 * bmp.getWidth()) {
-                    if (intersection.get(0).x > 0.5*bmp.getWidth()) {
-                        return 'u';
-                    } else {
-                        return 'r';
-                    }
-                }else {
-                    if (Math.abs(edge_0.y - intersection.get(0).y) < 0.025 * bmp.getHeight()) {
-                        return 'T';
-                    } else{
-                        if (Math.abs(edge_2.x - intersection.get(0).x) < 0.025 * bmp.getHeight()) {
-                            return 'Y';
-                        } else {
-                            return 'y';
-                        }
-                    }
-
-                }
-            // 3, r (kalo kebetulan tanduk r nya pendek)
-            } else if (edge_1.x > intersection.get(0).x) {
-                return 'r';
-            } else {
-                return '3';
-            }
-        } else if (n_edge == 4) {
-            // x,X, +, f, H, $, t,
-            PointCustom edge_0 = edge.get(0);
-            PointCustom edge_1 = edge.get(1);
-            PointCustom edge_2 = edge.get(2);
-            PointCustom edge_3 = edge.get(3);
-            Log.d("E0", edge_0.toString());
-            Log.d("E1", edge_1.toString());
-            Log.d("E2", edge_2.toString());
-            Log.d("E3", edge_3.toString());
-
-            if (n_int == 1) {
-                //X,x, t f,
-                if (edge_0.x < edge_1.x)   {
+                if (n_int == 1) {
+                    //X,x, t f,
+                    if (edge_0.x < edge_1.x) {
                         return 'x';
-                } else {
-                    if (edge_0.x >edge_3.x) {
-                        return 'f';
                     } else {
-                        return 't';
-                    }
-                }
-            // H, m, K,k
-            } else if (n_int == 2) {
-                if (edge_1.y > intersection.get(0).y && edge_2.y > intersection.get(0).y && edge_3.y > intersection.get(0).y) {
-                    return 'm';
-                // H,K, k
-                } else{
-                    for(int i = 0; i < 8; i++) {
-                        Log.d(""+i, ""+chainFrequency[i]+" "+normalizedFreq[i]);
-                    }
-                    if (normalizedFreq[0] + normalizedFreq[4] > 0.2) {
-                        return 'H';
-                    } else {
-                        if ((edge_1.y - edge_0.y) < 0.5*(intersection.get(0).y - edge_0.x ) && (edge_1.x - intersection.get(1).x) > 0.1*bmp.getWidth()) {
-                            return 'k';
+                        if (edge_0.x > edge_3.x) {
+                            return 'f';
                         } else {
-                            return 'K';
+                            return 't';
+                        }
+                    }
+                    // H, m, K,k
+                } else if (n_int == 2) {
+                    if (edge_1.y > intersection.get(0).y && edge_2.y > intersection.get(0).y && edge_3.y > intersection.get(0).y) {
+                        return 'm';
+                        // H,K, k
+                    } else {
+                        for (int i = 0; i < 8; i++) {
+                            Log.d("" + i, "" + chainFrequency[i] + " " + normalizedFreq[i]);
+                        }
+                        if (normalizedFreq[0] + normalizedFreq[4] > 0.2) {
+                            return 'H';
+                        } else {
+                            if ((edge_1.y - edge_0.y) < 0.5 * (intersection.get(0).y - edge_0.x) && (edge_1.x - intersection.get(1).x) > 0.1 * bmp.getWidth()) {
+                                return 'k';
+                            } else {
+                                return 'K';
+                            }
+                        }
+                    }
+                } else if (n_int == 4) {
+                    return '$';
+                }
+            } else if (n_edge == 5) {
+                return '*';
+            } else if (n_edge == 8) {
+                return '#';
+            }
+        } else if (numOfObject == 2){
+            if (n_lonePoint == 2){
+                return ':';
+            } else if(n_edge == 2){
+                if(n_lonePoint == 1){
+                    PointCustom edge_0 = edge.get(0);
+                    PointCustom edge_1 = edge.get(1);
+                    PointCustom lonePoint_0 = lonePoint.get(0);
+                    for (int i = 0; i < 8; i++) {
+                        Log.d("NUM " + i, "" + chainFrequency[i] + " " + normalizedFreq[i]);
+                    }
+                    if(edge_0.y < lonePoint_0.y){
+                        if(Math.abs(edge_0.x - edge_1.x) <= 3){
+                            return '!';
+                        } else {
+                            return '?';
+                        }
+                    } else {
+                        if(Math.abs(edge_0.x - edge_1.x) <= 3){
+                            return 'i';
+                        } else {
+                            double sum = normalizedFreq[0] + normalizedFreq[2] + normalizedFreq[4] + normalizedFreq[6];
+                            if(sum >= 0.9)
+                                return 'j';
+                            else
+                                return ';';
                         }
                     }
                 }
-            } else if (n_int == 4) {
-                return '$';
+            } else if (n_edge == 4){
+                for (int i = 0; i < 8; i++) {
+                    Log.d("NUM " + i, "" + chainFrequency[i] + " " + normalizedFreq[i]);
+                }
+                if(normalizedFreq[0] > 0.9){
+                    return '=';
+                } else {
+                    return '"';
+                }
             }
-        } else if (n_edge == 5) {
-            return '*';
-        } else if (n_edge == 8) {
-            return '#';
+        } else if (numOfObject == 3){
+            if (n_edge == 2){
+                return '%';
+            }
         }
         return '-';
     }
