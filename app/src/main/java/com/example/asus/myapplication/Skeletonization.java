@@ -2,7 +2,7 @@ package com.example.asus.myapplication;
 
 import android.graphics.Bitmap;
 import android.graphics.Color;
-import android.graphics.Point;
+import com.example.asus.myapplication.PointCustom;
 import android.support.annotation.IntegerRes;
 import android.util.Log;
 
@@ -19,15 +19,16 @@ import java.util.Vector;
  */
 
 public class Skeletonization {
-    List<Point> blackPoint = new ArrayList<Point>();
-    List<Point> edge = new ArrayList<Point>();
-    List<Point> intersection = new ArrayList<Point>();
-    List<Point> intersectionMoreThanThree = new ArrayList<Point>();
-    List<Point> intersectionThree = new ArrayList<Point>();
-    List<Point> neighbourIntersection = new ArrayList<Point>();
+    List<PointCustom> blackPoint = new ArrayList<PointCustom>();
+    List<PointCustom> edge = new ArrayList<PointCustom>();
+    List<PointCustom> intersection = new ArrayList<PointCustom>();
+    List<PointCustom> intersectionMoreThanThree = new ArrayList<PointCustom>();
+    List<PointCustom> intersectionThree = new ArrayList<PointCustom>();
+    List<PointCustom> neighbourIntersection = new ArrayList<PointCustom>();
     int[][] pixels;
     Bitmap bmp,realBitmap;
     int thresholdPoint;
+    int objectCount;
 
     final static int[][] nbrs = {{0, -1}, {1, -1}, {1, 0}, {1, 1}, {0, 1} ,{-1, 1} ,{-1, 0}, {-1, -1}, {0, -1}};
     final static int[][][] nbrGroups = {{{0, 2, 4}, {2, 4, 6}},
@@ -40,8 +41,10 @@ public class Skeletonization {
         this.intersection.clear();
         this.realBitmap = bmp;
         this.bmp = bmp;
+        this.objectCount = 0;
         this.pixels = new int[bmp.getWidth()][bmp.getHeight()];
         this.bmp = runAlgorithm(bmp);
+        Log.d("SKELETON CREATED", "     ");
     }
 
     private Bitmap runAlgorithm(Bitmap bmp){
@@ -51,7 +54,7 @@ public class Skeletonization {
                 if(isPixelBlack(bmp.getPixel(x,y))){
                     altbmp.setPixel(x, y, Color.BLACK);
                     pixels[x][y] = altbmp.getPixel(x, y);
-                    blackPoint.add(new Point(x,y));
+                    blackPoint.add(new PointCustom(x,y));
                     //Log.d("PIXEL",Color.);
                 } else {
                     pixels[x][y] = 0;
@@ -70,6 +73,8 @@ public class Skeletonization {
         }
 
         Log.d("OKK", "RUNNING");
+        objectCount = countObject();
+        Log.d("OBJECT COUNT", ""+objectCount);
         prediction = predict();
         Log.d("PREDICT", ""+prediction);
         return altbmp;
@@ -82,7 +87,7 @@ public class Skeletonization {
 
     // Credits to https://rosettacode.org/wiki/Zhang-Suen_thinning_algorithm
     private void ZhangSuenThinning() {
-        List<Point> toWhite = new ArrayList<Point>();
+        List<PointCustom> toWhite = new ArrayList<PointCustom>();
         List<Integer> changedIndex = new ArrayList<Integer>();
         boolean noChange = false;
         boolean firstStep = false;
@@ -104,14 +109,14 @@ public class Skeletonization {
                     if(!atLeastOneIsWhite(x, y, firstStep ? 0 : 1))
                         continue;
                     // 4. If all rule is satisfied, mark pixel for deletion
-                    toWhite.add(new Point(x, y));
+                    toWhite.add(new PointCustom(x, y));
                     changedIndex.add(i);
                 }
             }
             if(toWhite.isEmpty()) {
                 noChange = true;
             }
-            for(Point p : toWhite)
+            for(PointCustom p : toWhite)
                 pixels[p.x][p.y] = 0;
             toWhite.clear();
 
@@ -161,7 +166,7 @@ public class Skeletonization {
     }
 
     private int[][] thin(int[][] pixels){
-        List<Point> toWhite = new ArrayList<Point>();
+        List<PointCustom> toWhite = new ArrayList<PointCustom>();
         boolean change = true;
         boolean done = false;
         while (!done) {
@@ -184,12 +189,12 @@ public class Skeletonization {
                         if(!(passTwo(pixels,x,y)) && change)
                             continue;
                         //all conditions have been satisfied then replace p1 to transparent
-                        toWhite.add(new Point(x, y));
+                        toWhite.add(new PointCustom(x, y));
                         //pixels[x][y] = 0;
                     }
                 }
             }
-            for (Point p : toWhite)
+            for (PointCustom p : toWhite)
                 pixels[p.x][p.y] = 0;
             if (toWhite.size() == 0)
                 done = true;
@@ -204,7 +209,7 @@ public class Skeletonization {
     }
 
     private int[][] postprocess(int[][] pixels) {
-        List<Point> toWhite = new ArrayList<Point>();
+        List<PointCustom> toWhite = new ArrayList<PointCustom>();
         for(int i=0;i < 2; i++) {
             for (int x = 0; x < pixels.length; x++) {
                 for (int y = 0; y < pixels[x].length; y++) {
@@ -227,7 +232,7 @@ public class Skeletonization {
                                 ((e != 0 && ne == 0 && sw == 0 && (w == 0 || s == 0)) ||
                                         (w != 0 && nw == 0 && se == 0 && (e == 0 || s == 0))))))
                         {
-                            toWhite.add(new Point(x,y));
+                            toWhite.add(new PointCustom(x,y));
                         }
                     } else {
                         //South bias
@@ -235,20 +240,83 @@ public class Skeletonization {
                                 ((e != 0 && se == 0 && nw == 0 && (w == 0 || n == 0)) ||
                                         (w != 0 && sw == 0 && ne == 0 && (e == 0 || n == 0))))))
                         {
-                            toWhite.add(new Point(x,y));
+                            toWhite.add(new PointCustom(x,y));
                         }
                     }
                 }
             }
-            for (Point p : toWhite)
+            for (PointCustom p : toWhite)
                 pixels[p.x][p.y] = 0;
             toWhite.clear();
         }
         return pixels;
     }
 
+    private int countObject() {
+        updateBlackPoint();
+        List<PointCustom> unrecorded = blackPoint;
+        String coy = new String();
+        for(int i = 0; i < blackPoint.size(); i++) {
+            coy += "|"+blackPoint.get(i).x+" "+blackPoint.get(i).y+"|";
+        }
+        Log.d("BlackP", coy);
+        Log.d("BlackN", Integer.toString(blackPoint.size()));
+        int count = 0;
+        while(!unrecorded.isEmpty()) {
+            Log.d("UNRECORDED SIZE", Integer.toString(unrecorded.size()));
+            List<PointCustom> temp = new ArrayList<PointCustom>();
+            temp = generateObject(unrecorded.get(0), temp);
+            if(!temp.isEmpty()) {
+                String s = new String();
+                String s2 = new String();
+                for(int i = 0; i < temp.size(); i++) {
+                    s += "|"+temp.get(i).x+" "+temp.get(i).y+"|";
+                }
+                for(int i = 0; i < unrecorded.size(); i++) {
+                    s2 += "|"+unrecorded.get(i).x+" "+unrecorded.get(i).y+"|";
+                }
+                Log.d("TEMP", s);
+                Log.d("UNRE", s2);
+                Log.d("TEMP SIZE", Integer.toString(temp.size()));
+                unrecorded.removeAll(temp);
+                count++;
+            }
+        }
+        return count;
+    }
+
+    private List<PointCustom> generateObject(PointCustom p, List<PointCustom> recorded) {
+        //Stop Condition
+        if(p.x != 0 && p.y != 0 && p.x != bmp.getWidth()-1 && p.y != bmp.getHeight()-1) {
+            if(blackPoint.contains(p)) {
+                if(!recorded.contains(p)) {
+                    List<PointCustom> retval = new ArrayList<PointCustom>();
+                    PointCustom invoked = new PointCustom();
+                    retval.add(p);
+                    recorded.addAll(retval);
+                    for (int i = 0; i < nbrs.length-1; i++) {
+                        invoked.set(p.x + nbrs[i][0],p.y + nbrs[i][1]);
+                        List<PointCustom> temp = new ArrayList<PointCustom>();
+                        temp = generateObject(new PointCustom(p.x + nbrs[i][0],p.y + nbrs[i][1]),recorded);
+                        if(!temp.isEmpty()) {
+                            retval.addAll(temp);
+                            recorded.addAll(retval);
+                        }
+                    }
+                    return(retval);
+                } else {
+                    return(new ArrayList<PointCustom>());
+                }
+            } else {
+                return(new ArrayList<PointCustom>());
+            }
+        } else {
+            return(new ArrayList<PointCustom>());
+        }
+    }
+
     private int[][] removeFalseEndpoint(int[][] pixels){
-        List<Point> toWhite = new ArrayList<Point>();
+        List<PointCustom> toWhite = new ArrayList<PointCustom>();
         int threshold = thresholdPoint*blackPoint.size() /1000;
         Log.d("threshold : ", ""+threshold);
         //Hilangin cabang
@@ -260,15 +328,15 @@ public class Skeletonization {
                 if(numOfBlack == 1){
 //                    Log.d("ENDPOINT", Integer.toString(x) + " " + Integer.toString(y));
                     int i = 0;
-                    List<Point> sequenceOfBlack = new ArrayList<>();
-                    sequenceOfBlack.add(new Point(x,y));
+                    List<PointCustom> sequenceOfBlack = new ArrayList<>();
+                    sequenceOfBlack.add(new PointCustom(x,y));
                     for(i = 0;i < threshold;i++){
-                        List<Point> blackNeighbor = getBlackNeighbor(pixels,sequenceOfBlack.get(sequenceOfBlack.size()-1).x,
+                        List<PointCustom> blackNeighbor = getBlackNeighbor(pixels,sequenceOfBlack.get(sequenceOfBlack.size()-1).x,
                                 sequenceOfBlack.get(sequenceOfBlack.size()-1).y);
                         if(blackNeighbor.size() <= 2){
-                            for (Point p : blackNeighbor) {
+                            for (PointCustom p : blackNeighbor) {
                                 boolean add = true;
-                                for(Point p1 : sequenceOfBlack) {
+                                for(PointCustom p1 : sequenceOfBlack) {
                                     if(p.x == p1.x && p.y == p1.y)
                                         add = false;
                                 }
@@ -282,7 +350,7 @@ public class Skeletonization {
                         }else{
                             //Penanganan supaya titik tidak putus
                             for(int j = 0; j < blackNeighbor.size();j++){
-                                for(Point p1 : sequenceOfBlack) {
+                                for(PointCustom p1 : sequenceOfBlack) {
                                     if(blackNeighbor.get(j).x == p1.x && blackNeighbor.get(j).y == p1.y) {
                                         blackNeighbor.remove(j);
                                         break;
@@ -298,11 +366,11 @@ public class Skeletonization {
                             break;
                         }
                     }
-//                    for (Point p : sequenceOfBlack)
+//                    for (PointCustom p : sequenceOfBlack)
 //                        Log.d("BLACK", Integer.toString(p.x) + " " + Integer.toString(p.y));
                     if(i < threshold)
                     {
-                        for (Point p : sequenceOfBlack)
+                        for (PointCustom p : sequenceOfBlack)
                             pixels[p.x][p.y] = 0;
                     }
                     sequenceOfBlack.clear();
@@ -312,24 +380,24 @@ public class Skeletonization {
         return pixels;
     }
 
-    private List<Point> getBlackNeighbor(int[][] pixels, int x, int y){
-        List<Point> black = new ArrayList<Point>();
+    private List<PointCustom> getBlackNeighbor(int[][] pixels, int x, int y){
+        List<PointCustom> black = new ArrayList<PointCustom>();
         if(pixels[x][y-1] != 0)
-            black.add(new Point(x,y-1));
+            black.add(new PointCustom(x,y-1));
         if(pixels[x+1][y-1] != 0)
-            black.add(new Point(x+1,y-1));
+            black.add(new PointCustom(x+1,y-1));
         if(pixels[x+1][y] != 0)
-            black.add(new Point(x+1,y));
+            black.add(new PointCustom(x+1,y));
         if(pixels[x+1][y+1] != 0)
-            black.add(new Point(x+1,y+1));
+            black.add(new PointCustom(x+1,y+1));
         if(pixels[x][y+1] != 0)
-            black.add(new Point(x,y+1));
+            black.add(new PointCustom(x,y+1));
         if(pixels[x-1][y+1] != 0)
-            black.add(new Point(x-1,y+1));
+            black.add(new PointCustom(x-1,y+1));
         if(pixels[x-1][y] != 0)
-            black.add(new Point(x-1,y));
+            black.add(new PointCustom(x-1,y));
         if(pixels[x-1][y-1] != 0)
-            black.add(new Point(x-1,y-1));
+            black.add(new PointCustom(x-1,y-1));
         return black;
     }
 
@@ -416,7 +484,7 @@ public class Skeletonization {
         for(int x = 0; x < pixels.length; x++) {
             for (int y = 0; y < pixels[x].length; y++) {
                 if(pixels[x][y] != 0) {
-                    blackPoint.add(new Point(x, y));
+                    blackPoint.add(new PointCustom(x, y));
                 }
             }
         }
@@ -438,8 +506,8 @@ public class Skeletonization {
         }
     }
 
-    private void setNeighborIntersection(List<Point> intersection) {
-        List<Point> temp = new ArrayList<Point>();
+    private void setNeighborIntersection(List<PointCustom> intersection) {
+        List<PointCustom> temp = new ArrayList<PointCustom>();
         double threshold = thresholdPoint*blackPoint.size() /2000;
         for(int i = 0; i < intersection.size(); i++) {
             for(int j = i + 1; j < intersection.size(); j++) {
@@ -450,7 +518,7 @@ public class Skeletonization {
                 }
             }
         }
-        neighbourIntersection = new ArrayList<Point>(
+        neighbourIntersection = new ArrayList<PointCustom>(
                 new HashSet<>(temp));
         intersection.removeAll(neighbourIntersection);
     }
@@ -537,8 +605,8 @@ public class Skeletonization {
 
             if (n_int == 0) {
                 //5, 2, I,-, 7, / , <, >, C, J, L, M, N, S, U, V, W, Z. ^, [,],{,},~, G,
-                Point edge_0 = edge.get(0);
-                Point edge_1 = edge.get(1);
+                PointCustom edge_0 = edge.get(0);
+                PointCustom edge_1 = edge.get(1);
 
                 // - U, V, W, ^, _, M, v, ~
                 if (Math.abs(edge_0.y - edge_1.y) < (0.06*bmp.getHeight())) {
@@ -667,10 +735,10 @@ public class Skeletonization {
             } else if (n_int == 2) {
                 // a, b, d, g, p, q, Q
 
-                Point edge_0 = edge.get(0);
-                Point edge_1 = edge.get(1);
-                Point intersec_0 = intersection.get(0);
-                Point intersec_1 = intersection.get(1);
+                PointCustom edge_0 = edge.get(0);
+                PointCustom edge_1 = edge.get(1);
+                PointCustom intersec_0 = intersection.get(0);
+                PointCustom intersec_1 = intersection.get(1);
 
 
                 //a , b, d, g , p, q, Q
@@ -714,9 +782,9 @@ public class Skeletonization {
         // 1,3, E, , T, Y, F, n , r, h, y, u
         } else if (n_edge == 3){
 
-            Point edge_0 = edge.get(0);
-            Point edge_1 = edge.get(1);
-            Point edge_2 = edge.get(2);
+            PointCustom edge_0 = edge.get(0);
+            PointCustom edge_1 = edge.get(1);
+            PointCustom edge_2 = edge.get(2);
 
             // E,F,
             if (edge_0.x > bmp.getWidth()/2 && edge_1.x > bmp.getWidth()/2  ) {
@@ -763,10 +831,10 @@ public class Skeletonization {
             }
         } else if (n_edge == 4) {
             // x,X, +, f, H, $, t,
-            Point edge_0 = edge.get(0);
-            Point edge_1 = edge.get(1);
-            Point edge_2 = edge.get(2);
-            Point edge_3 = edge.get(3);
+            PointCustom edge_0 = edge.get(0);
+            PointCustom edge_1 = edge.get(1);
+            PointCustom edge_2 = edge.get(2);
+            PointCustom edge_3 = edge.get(3);
             Log.d("E0", edge_0.toString());
             Log.d("E1", edge_1.toString());
             Log.d("E2", edge_2.toString());
@@ -813,9 +881,9 @@ public class Skeletonization {
         return '-';
     }
 
-    public void sortPoint(List<Point> listPoint) {
+    public void sortPoint(List<PointCustom> listPoint) {
         int n = listPoint.size();
-        Point temp;
+        PointCustom temp;
 
         for(int i=0; i < n; i++){
             for(int j=1; j < (n-i); j++){
