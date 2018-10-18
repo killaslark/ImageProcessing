@@ -533,24 +533,47 @@ public class Skeletonization {
                 }
             }
         } else if (n_edge == 2) {
-            // -,2, 4,5 ,7, A, I,/, <, >, C, J , L , M , N, Q, R, S, U, V, W, Z, ^,[, ], {, }, ~, (, ) , a, b, d, g, p, q, s,
+            // -,2, 4,5 ,7, A, I,/, <, >, C, J , L , M , N, Q, R, S, U, V, W, Z, ^,[, ], {, }, ~, (, ) , a, b, d, g, p, q, s, w v
 
             if (n_int == 0) {
                 //5, 2, I,-, 7, / , <, >, C, J, L, M, N, S, U, V, W, Z. ^, [,],{,},~, G,
                 Point edge_0 = edge.get(0);
                 Point edge_1 = edge.get(1);
 
-                // - U, V, W
+                // - U, V, W, ^, _, M, v, ~
                 if (Math.abs(edge_0.y - edge_1.y) < (0.06*bmp.getHeight())) {
                     for(int i = 0; i < 8; i++) {
                         Log.d(""+i, ""+chainFrequency[i]+" "+normalizedFreq[i]);
                     }
-                    if (isPixelBlack(bmp.getPixel(edge_0.x+1,edge_0.y))) {
+                    // M, _
+                    if (edge_0.y > 0.6*bmp.getHeight()){
+                        if (normalizedFreq[0] + normalizedFreq[4] > 0.7) {
+                            return '_';
+                        } else {
+                            return 'M';
+                        }
+                    // -, ~
+                    } else  if (normalizedFreq[0] + normalizedFreq[4] > 0.5){
+                        if (normalizedFreq[0] + normalizedFreq[4] > 0.7) {
+                            return '-';
+                        } else {
+                            return '~';
+                        }
+                    // U, V, W,w ,v, ^
+                    } else if (normalizedFreq[1] + normalizedFreq[7] > 0.2){
                         return '^';
+                    } else if (normalizedFreq[3] + normalizedFreq[5] < 0.1) {
+                        return 'U';
                     } else {
-
+                        if (normalizedFreq[3] + normalizedFreq[5] > 0.15) {
+                            return 'V';
+                        } else {
+                            return 'W';
+                        }
                     }
-                // <,C.[,{, (
+
+
+                    // <,C.[,{, (, c
                 } else if (edge_0.x > (bmp.getWidth()/2) && edge_1.x > (bmp.getWidth()/2)) {
                     if (normalizedFreq[5] < 0.05 && normalizedFreq[7] < 0.05){
                         return '[';
@@ -564,14 +587,16 @@ public class Skeletonization {
                         }
                     }  else if (normalizedFreq[4] > 0.2){
                         return '<';
+                    // c, C
                     } else {
                         return 'C';
                     }
-                // >, 7,],}, ), I
+                // >, 7,],}, ), I,l
                 } else if (edge_0.x < (bmp.getWidth()/2) && edge_1.x < (bmp.getWidth()/2)) {
-                    // I,]
+                    // I,],l
                     if (normalizedFreq[1] < 0.008 && normalizedFreq[3] < 0.008){
-                         if (normalizedFreq[5] == 0) {
+                        // I,l
+                        if (normalizedFreq[5] == 0) {
                              return 'I';
                          } else {
                              return ']';
@@ -588,13 +613,50 @@ public class Skeletonization {
 
                 // 5, N , S, /, J,
                 } else if (edge_0.x > edge_1.x) {
-                    return '5';
+                    for(int i = 0; i < 8; i++) {
+                        Log.d(""+i, ""+chainFrequency[i]+" "+normalizedFreq[i]);
+                    }
+                    // N,J
+                    if (normalizedFreq[1] + normalizedFreq[5] < 0.01) {
+                        return '/';
+                    } else if (normalizedFreq[2] + normalizedFreq[6] > 0.5) {
+                        if (normalizedFreq[1] + normalizedFreq[5] > 0.14) {
+                            return 'N';
+                        } else {
+                            return 'J';
+                        }
+                    // S, 5, /, s
+                    } else {
+                            if ( normalizedFreq[2] + normalizedFreq[6] > 0.3) {
+                                return '5';
+                            // s,S
+                            } else {
+                                return 'S';
+                            }
+                    }
 
-                // 2, L, Z
+                // 2, L, Z,\
                 } else if (edge_0.x  < edge_1.x ){
-                    return '2';
-                } else {
-                    return '7';
+                    for(int i = 0; i < 8; i++) {
+                        Log.d(""+i, ""+chainFrequency[i]+" "+normalizedFreq[i]);
+                    }
+
+                    if (normalizedFreq[2] + normalizedFreq[6] > 0.6 ) {
+                        if (normalizedFreq[0] + normalizedFreq[4] > 0.2) {
+                            return 'L';
+                        } else {
+                            return '\\';
+                        }
+                    } else {
+                        if (normalizedFreq[1] + normalizedFreq[5] > 0.05) {
+                            return '2';
+                        //z,Z,\
+                        } else if (normalizedFreq[7] + normalizedFreq[3] < 0.01) {
+                            return '\\';
+                        } else {
+                            return 'Z';
+                        }
+                     }
                 }
 
             // 4
@@ -655,12 +717,8 @@ public class Skeletonization {
             Point edge_0 = edge.get(0);
             Point edge_1 = edge.get(1);
             Point edge_2 = edge.get(2);
-            Log.d("E0", edge_0.toString());
-            Log.d("E1", edge_1.toString());
-            Log.d("E2", edge_2.toString());
-            Log.d("I0", intersection.get(0).toString());
 
-            // E,F
+            // E,F,
             if (edge_0.x > bmp.getWidth()/2 && edge_1.x > bmp.getWidth()/2  ) {
                 if (edge_2.x > bmp.getWidth()/2) {
                     return 'E';
@@ -704,13 +762,18 @@ public class Skeletonization {
                 return '3';
             }
         } else if (n_edge == 4) {
-            // x,X, +, f, H, $, t
+            // x,X, +, f, H, $, t,
             Point edge_0 = edge.get(0);
             Point edge_1 = edge.get(1);
             Point edge_2 = edge.get(2);
             Point edge_3 = edge.get(3);
+            Log.d("E0", edge_0.toString());
+            Log.d("E1", edge_1.toString());
+            Log.d("E2", edge_2.toString());
+            Log.d("E3", edge_3.toString());
 
             if (n_int == 1) {
+                //X,x, t f,
                 if (edge_0.x < edge_1.x)   {
                         return 'x';
                 } else {
@@ -720,27 +783,32 @@ public class Skeletonization {
                         return 't';
                     }
                 }
+            // H, m, K,k
             } else if (n_int == 2) {
-                Log.d("I0", intersection.get(0).toString());
-                Log.d("I1", intersection.get(1).toString());
-
-                if (Math.abs(intersection.get(0).y - intersection.get(1).y) < 5) {
+                if (edge_1.y > intersection.get(0).y && edge_2.y > intersection.get(0).y && edge_3.y > intersection.get(0).y) {
+                    return 'm';
+                // H,K, k
+                } else{
+                    for(int i = 0; i < 8; i++) {
+                        Log.d(""+i, ""+chainFrequency[i]+" "+normalizedFreq[i]);
+                    }
+                    if (normalizedFreq[0] + normalizedFreq[4] > 0.2) {
                         return 'H';
-
-                } else {
-                    if (Math.abs(edge_0.x - edge_1.x) < 5) {
-                        if ( (edge_2.y - edge_0.y) > 0) {
+                    } else {
+                        if ((edge_1.y - edge_0.y) < 0.5*(intersection.get(0).y - edge_0.x ) && (edge_1.x - intersection.get(1).x) > 0.1*bmp.getWidth()) {
                             return 'k';
                         } else {
                             return 'K';
                         }
-                    } else {
-                        return '$';
                     }
                 }
+            } else if (n_int == 4) {
+                return '$';
             }
-        } else if (n_edge >4) {
+        } else if (n_edge == 5) {
             return '*';
+        } else if (n_edge == 8) {
+            return '#';
         }
         return '-';
     }
@@ -748,6 +816,7 @@ public class Skeletonization {
     public void sortPoint(List<Point> listPoint) {
         int n = listPoint.size();
         Point temp;
+
         for(int i=0; i < n; i++){
             for(int j=1; j < (n-i); j++){
                 if(listPoint.get(j-1).y > listPoint.get(j).y){
@@ -755,17 +824,38 @@ public class Skeletonization {
                     temp = listPoint.get(j-1);
                     listPoint.set(j-1,listPoint.get(j));
                     listPoint.set(j,temp);
-                } else {
-                    if (listPoint.get(j-1).y == listPoint.get(j).y) {
-                        if (listPoint.get(j-1).x > listPoint.get(j).x) {
-                            temp = listPoint.get(j-1);
-                            listPoint.set(j-1,listPoint.get(j));
-                            listPoint.set(j,temp);
-                        }
+                } else if (listPoint.get(j-1).y == listPoint.get(j).y){
+                    if (listPoint.get(j-1).x > listPoint.get(j).x) {
+                        temp = listPoint.get(j-1);
+                        listPoint.set(j-1,listPoint.get(j));
+                        listPoint.set(j,temp);
                     }
                 }
             }
         }
+
+//        for(int i=0; i < n; i++){
+//            int j=1;
+//            while (j < (n-i)) {
+//                int k = j;
+//                while (listPoint.get(j - 1).x == listPoint.get(k).x) {
+//                    k++;
+//                }
+//                for (int x = j - 1; x < k; x++) {
+//                    for (int y = j; y < (k - 1); y++) {
+//                        if (listPoint.get(j - 1).x > listPoint.get(j).x) {
+//                            //swap elements
+//                            temp = listPoint.get(j - 1);
+//                            listPoint.set(j - 1, listPoint.get(j));
+//                            listPoint.set(j, temp);
+//                        }
+//                    }
+//
+//                    j++;
+//                }
+//            }
+//        }
+
     }
 
     public int[] getChainFrequencyFromBitmap(Bitmap bitmap) {
