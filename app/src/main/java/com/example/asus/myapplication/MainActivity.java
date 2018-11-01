@@ -35,7 +35,6 @@ import java.util.Vector;
 
 public class MainActivity extends AppCompatActivity {
 
-    ;
     private CurveView valueCurveView,redCurveView, greenCurveView, blueCurveView;
     private TextView valueCurveText, redCurveText, greenCurveText, blueCurveText, textNumber, textThreshold;
 
