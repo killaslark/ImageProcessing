@@ -593,18 +593,20 @@ public class Skeletonization {
                     }
                 }
             } else if (n_edge == 1) {
-                // @, P, 6 or 9, e
+                // @, P, 6 or 9, e, a
 
                 //6
                 if (intersection.get(0).y > edge.get(0).y) {
                     return '6';
-                    //@, P, 9, e
+                    //@, P, 9, e, a
                 } else {
                     if (normalizedFreq[6] > 0.25) {
                         return 'P';
                     } else {
-
-                        if (intersection.get(0).x < edge.get(0).x) {
+                        int aThreshold = 6;
+                        if (Math.abs(intersection.get(0).x - edge.get(0).x) < aThreshold) {
+                            return 'a';
+                        }else if (intersection.get(0).x < edge.get(0).x) {
                             if (intersection.get(0).x < bmp.getWidth() / 2) {
                                 return 'e';
                             } else {
@@ -777,8 +779,11 @@ public class Skeletonization {
                         }
                         // A R
                     } else {
+                        int Athreshold = 5;
                         if (normalizedFreq[7] < 0.01) {
                             return 'R';
+                        }else if (Math.abs(intersec_0.y - intersec_1.y) > Athreshold){
+                            return 'q';
                         } else {
                             return 'A';
                         }
@@ -849,9 +854,16 @@ public class Skeletonization {
 
                 if (n_int == 1) {
                     //X,x, t f, k
+                    PointCustom intersec_0 = intersection.get(0);
+                    Log.d("Intersect 1", intersec_0.toString());
                     if (Math.abs(edge_0.y - edge_1.y) < 0.05 * bmp.getHeight()) {
                         if (normalizedFreq[2] + normalizedFreq[6] > 0.4) {
-                            return 'k';
+                            int fourThreshold = 6;
+                            if(Math.abs(edge_2.y - intersec_0.y) < fourThreshold){
+                                return '4';
+                            }else{
+                                return 'k';
+                            }
                         }
                         else {
                             return 'x';
@@ -859,7 +871,12 @@ public class Skeletonization {
                         }
                     } else {
                         if (Math.abs(edge_0.x - edge_3.x) <  0.05* bmp.getHeight()) {
-                            return 'k';
+                            int fourThreshold = 6;
+                            if(Math.abs(edge_2.y - intersec_0.y) < fourThreshold){
+                                return '4';
+                            }else {
+                                return 'k';
+                            }
                         } else {
                             if (edge_0.x > edge_3.x) {
                                 return 'f';
@@ -874,11 +891,18 @@ public class Skeletonization {
                         return 'm';
                         // H,K, k
                     } else {
+                        int fourThreshold = 6;
                         if (normalizedFreq[0] + normalizedFreq[4] > 0.2) {
-                            return 'H';
+                            if(Math.abs(edge_2.y - intersection.get(0).y) < fourThreshold || Math.abs(edge_2.y - intersection.get(1).y) < fourThreshold){
+                                return '4';
+                            }else {
+                                return 'H';
+                            }
                         } else {
                             if ((edge_1.y - edge_0.y) < 0.5 * (intersection.get(0).y - edge_0.x) && (edge_1.x - intersection.get(1).x) > 0.1 * bmp.getWidth()) {
                                 return 'k';
+                            } else if(Math.abs(edge_2.y - intersection.get(0).y) < fourThreshold || Math.abs(edge_2.y - intersection.get(1).y) < fourThreshold){
+                                return '4';
                             } else {
                                 return 'K';
                             }
